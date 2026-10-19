@@ -1,0 +1,59 @@
+.mermaid-beauty-measure {
+  position: absolute;
+  left: -100000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  contain: layout style;
+}
+.mermaid.mermaid-beauty-container { --mermaid-beauty-export-size: 28px; position: relative; overflow-x: auto; min-height: calc(var(--mermaid-beauty-export-size) + 16px); }
+.mermaid-beauty-actions { position: absolute; bottom: clamp(0px, (100% - var(--mermaid-beauty-export-size)) / 2, 8px); left: 8px; z-index: 100; display: flex; transform: translateX(var(--mermaid-beauty-scroll-offset, 0px)); }
+.mermaid-beauty-actions > .mermaid-beauty-export { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: var(--mermaid-beauty-export-size); height: var(--mermaid-beauty-export-size); min-width: var(--mermaid-beauty-export-size); min-height: var(--mermaid-beauty-export-size); padding: 4px; border-radius: 6px; color: var(--text-muted); background: var(--background-primary); border: 1px solid var(--background-modifier-border); box-shadow: none; opacity: 0.75; }
+.mermaid-beauty-actions > .mermaid-beauty-export:is(:hover, :focus) { color: var(--text-normal); background: var(--background-secondary); opacity: 1; }
+.mermaid-beauty-actions > .mermaid-beauty-export:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; opacity: 1; }
+.mermaid-beauty-actions > .mermaid-beauty-export svg { width: 18px; height: 18px; flex: none; }
+@media (hover: none), (pointer: coarse), (max-width: 480px) {
+  .mermaid.mermaid-beauty-container { --mermaid-beauty-export-size: 44px; }
+}
+@media print { .mermaid-beauty-actions { display: none; } }
+.mermaid-beauty-diagram[data-mermaid-beauty-fit="true"] { max-width: 100%; height: auto; }
+.mermaid-beauty-diagram[data-mermaid-beauty-fit="false"] { max-width: none; }
+/* Zoom measures its detached clone using viewBox, then scales its wrapper.
+   Keep that clone at the same size and scale strokes with text and markers. */
+.mermaid-zoom-modal-wrapper svg.mermaid-beauty-diagram {
+  width: var(--mermaid-beauty-width);
+  height: var(--mermaid-beauty-height);
+}
+.mermaid-zoom-modal-wrapper svg.mermaid-beauty-diagram * {
+  vector-effect: none;
+}
+.mermaid-beauty-settings .mermaid-beauty-config { width: 100%; min-height: 150px; font-family: var(--font-monospace); }
+.mermaid-beauty-settings .mermaid-beauty-error { color: var(--text-error); white-space: pre-wrap; }
+.mermaid-beauty-settings input.mermaid-beauty-hex { width: 104px; font-family: var(--font-monospace); }
+.mermaid-beauty-settings input.mermaid-beauty-hex.is-invalid { border-color: var(--text-error); }
+.mermaid-beauty-settings .mermaid-beauty-color-style { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--background-modifier-border); border-radius: 8px; background: var(--background-secondary); }
+.mermaid-beauty-settings .mermaid-beauty-color-style > button { border: 0; background: transparent; box-shadow: none; white-space: nowrap; }
+.mermaid-beauty-settings .mermaid-beauty-color-style > button[aria-pressed="true"] { color: var(--interactive-accent); background: var(--background-primary); font-weight: 600; }
+.mermaid-beauty-settings .mermaid-beauty-palettes { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.mermaid-beauty-settings .mermaid-beauty-palette-choice { height: auto; display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; white-space: normal; text-align: left; color: var(--text-normal); background: var(--background-primary); border: 1px solid var(--background-modifier-border); box-shadow: none; }
+.mermaid-beauty-settings .mermaid-beauty-palette-choice[aria-pressed="true"] { border-color: var(--interactive-accent); box-shadow: 0 0 0 1px var(--interactive-accent); }
+.mermaid-beauty-settings .mermaid-beauty-palette-choice:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 3px; }
+.mermaid-beauty-settings .mermaid-beauty-swatches { display: flex; gap: 5px; width: 100%; }
+.mermaid-beauty-settings .mermaid-beauty-swatches > span { flex: 1; min-width: 0; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: 1px solid var(--mermaid-beauty-swatch-border); color: var(--mermaid-beauty-swatch-text); background: var(--mermaid-beauty-swatch); font-size: 12px; }
+.mermaid-beauty-settings .mermaid-beauty-palette-name { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-weight: 600; }
+.mermaid-beauty-settings .mermaid-beauty-palette-check { color: var(--interactive-accent); }
+.mermaid-beauty-settings .mermaid-beauty-palette-choice[aria-pressed="false"] .mermaid-beauty-palette-check { visibility: hidden; }
+.mermaid-beauty-settings .mermaid-beauty-palette-caption { color: var(--text-muted); font-size: var(--font-smallest); }
+
+.mermaid-beauty-settings .mermaid-beauty-stacked { display: block; }
+.mermaid-beauty-settings .mermaid-beauty-stacked > .setting-item-control { display: block; margin-top: 12px; }
+.mermaid-beauty-settings .mermaid-beauty-custom > .setting-item-info { display: none; }
+.mermaid-beauty-settings .mermaid-beauty-custom > .setting-item-control { margin-top: 0; text-align: left; }
+.mermaid-beauty-settings .mermaid-beauty-custom summary { color: var(--text-muted); cursor: var(--cursor); }
+.mermaid-beauty-settings .mermaid-beauty-custom details[open] summary { margin-bottom: 12px; }
+@media (max-width: 480px) {
+  .mermaid-beauty-settings .mermaid-beauty-palettes { grid-template-columns: minmax(0, 1fr); }
+}
+.mermaid-beauty-export-notice { display: flex; flex-direction: column; gap: 8px; }
+.mermaid-beauty-export-notice button { align-self: flex-start; }
+.mermaid-beauty-export-path { overflow-wrap: anywhere; font-size: var(--font-ui-smaller); opacity: .8; }

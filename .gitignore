@@ -1,0 +1,19 @@
+# ---- Obsidian ----
+# Per-user workspace state (window layout, open tabs, recent files).
+# Keep shared config (app.json, appearance.json, plugins, etc.) under version control.
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/workspace-mobile-iphone.json
+.obsidian/workspace-mobile-android.json
+
+# Obsidian runtime cache and internal trash
+.obsidian/cache
+.trash/
+
+# ---- OS / Editor ----
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
