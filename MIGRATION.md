@@ -1,0 +1,79 @@
+# Migration map: docs/ → system/ (2026-10-19)
+
+Куда перенесён каждый раздел старой структуры. «Объединено» — раздел повторял другой и сведён в одно место. Файл можно удалить после review.
+
+## Документы
+
+| Старое | Раздел | Новое место |
+|---|---|---|
+| `README.md` | Назначение, принципы, гибкость, подключение проекта | `README.md` |
+| | Диаграмма цикла | `README.md` (перерисована со статусами, решениями и gates) |
+| | «С чего начать» (7 шагов) | `README.md` § Как пользоваться (5 шагов; шаг «измерения» перенесён до реализации) |
+| `00-operating-model` | Цель, входы | `system/00-model.md` |
+| | Рабочий поток (11 шагов) | `00-model` § Стадии и шаги |
+| | Статусы идеи (12) | `00-model` § Статус идеи (7) + § Статус эксперимента (6): `evidence-gathering`→`researching`, `scored`→`screened`, `cheap-test`→`testing` + дешёвый `method`, `ready-to-build`→эксперимент `ready`, `building`→эксперимент `building`, `live-observing`→`live`, `decision-needed`→`review`; `iterate`, `scale` — это решения (`decision`), `scale` также статус идеи `scaling` |
+| | Ритм работы | `00-model` § Ритм работы |
+| | Артефакты — источник истины | `00-model` § Заметки (`kind`) |
+| | Разделение двух целей | `00-model` § Трек |
+| | Правило остановки | `00-model` § Правило остановки |
+| `01-idea-discovery` | Цель, источники, процедура, от проблемы к гипотезе, асинхронное исследование | `system/10-discover.md` |
+| | Сильные / слабые сигналы | объединено: `00-model` § Лестница сигналов (L2 — сильные, L0–L1 — слабые) |
+| | Типы свидетельств | `10-discover` § Типы свидетельств + `templates/evidence.md` |
+| | Результат стадии | `10-discover` § Результат стадии → секции шаблона `idea` |
+| `02-idea-screener` | Принцип, шкала, веса, уверенность, диапазоны | `system/20-screen.md` (без изменений по сути) |
+| | Обязательные фильтры | `20-screen` § Обязательные фильтры (G1) |
+| | Портфельный score | `20-screen` § Портфельная оценка |
+| | Формат результата | объединено: frontmatter шаблона `idea` |
+| `03-experiment-design` | Цель, примеры гипотез, выборка, посты | `system/30-experiment.md` § Дизайн |
+| | Карта эксперимента (11 полей) | объединено: `templates/experiment.md` § Дизайн (G2), пояснения полей — в шаблоне |
+| | Типы проверок | `00-model` § Способ проверки (`method`) |
+| | Эксперимент с новой функцией | `30-experiment` § Эксперимент-функция |
+| `04-agentic-delivery` | Принцип, постановка для агента, защита от хаоса | `system/40-deliver.md` |
+| | Минимальный процесс, шаги 5–9 | объединено: `templates/release-checklist.md` |
+| | Definition of Done | объединено: `templates/release-checklist.md` |
+| `05-analytics-and-monitoring` | Цель, группы событий, свойства, воронка, метрики, dashboard | `30-experiment` § Измерение |
+| | Мониторинг до релиза | объединено: `templates/release-checklist.md` § Измерение |
+| | Интерпретация | `30-experiment` § Интерпретация воронки |
+| `06-decision-review` | Когда проводить, вопросы review | `30-experiment` § Review и решение |
+| | Возможные решения | `00-model` § Решение; `portfolio-only` → `track: portfolio` |
+| | Что считать сильным сигналом | объединено: `00-model` § Лестница сигналов |
+| | Калибровка скринера | `20-screen` § Калибровка |
+| | Обязательная запись результата | `30-experiment` § Запись решения → шаблон `experiment` § Результат и решение |
+| `07-llm-assisted-research` | Роль, процесс, промпт, результат | `system/modules/llm-research.md` |
+| | Поля свидетельства | объединено с `source-evidence`: `templates/evidence.md` (`pain_type` → `evidence_type`) |
+| | Защита от ошибок | LLM-специфичные пункты — в модуле; общие (дубли, даты, `unknown`, «интересно ≠ платить») — в правилах `templates/evidence.md` |
+| `08-llm-evaluation-data` | Весь документ | `system/modules/llm-eval-data.md` (без изменений, кроме вступления) |
+
+## Шаблоны
+
+| Старое | Новое |
+|---|---|
+| `idea-brief` | `templates/idea.md` (frontmatter); § «Самый дешёвый следующий тест» сокращён до метода и критической гипотезы — поля дизайна живут в эксперименте; чекбоксы решения → `status` + `track` |
+| `source-evidence` | `templates/evidence.md` |
+| `experiment-brief` | `templates/experiment.md`; «Режим» → `method` + `track` |
+| `decision-record` | слит в `templates/experiment.md` § Результат и решение |
+| `post-brief` | слит в `templates/experiment.md` (`method: post`, `post_goal`, § Пост); шкала «слабый/средний/сильный» → лестница L0–L5 |
+| `release-checklist` | `templates/release-checklist.md`, дополнен DoD (04) и мониторингом до релиза (05) |
+| — | новые: `templates/project.md`, `registry.base`, `.obsidian/templates.json` |
+
+## Проект anti-scope-creep
+
+| Старое | Новое |
+|---|---|
+| README: гипотеза, категории, beachhead, риски/неизвестные | `ideas/idea-asc-001-contract-risk-review.md` |
+| README: «что есть сейчас» | ссылки на репо + § Сверка 2026-10-19 (аналитика сделана, Pro waitlist, ops) |
+| README: события | ссылка на `docs/analytics.md` репо + список недостающих событий |
+| README: план, треки | README |
+| EXP-ASC-001…003 | те же файлы в формате шаблона; содержание сохранено |
+| EXP-ASC-004 (серия постов) | гипотеза серии, каналы и правила → README § Каналы и посты; посты → EXP-ASC-004, 006, 007, 008, 009 |
+| — | новый EXP-ASC-005 (Pro waitlist, из `docs/analytics.md` репо) |
+
+## Добавлено после миграции
+
+| Что | Где |
+|---|---|
+| Режимы Capture / Sweep / Screen, триггер внепланового sweep, правило «планка не зависит от пула» | `00-model` § Ритм работы (заменяет «работать непрерывно» и пункты «Поиск», «Триаж») |
+| Sweep: порядок и экспресс-оценка из 5 вопросов; «Процедура сбора» переименована в «Углублённый сбор» | `10-discover` |
+| Inbox и ротация сегментов | `inbox.md` |
+| Вид «Пул идей» | `registry.base` |
+| Промпт для sweep агентом | `modules/llm-research` § Режим sweep |

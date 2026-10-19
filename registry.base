@@ -1,0 +1,100 @@
+filters:
+  and:
+    - '!file.inFolder("templates")'
+    - 'kind == "idea" || kind == "experiment"'
+views:
+  - type: table
+    name: Пул идей
+    filters:
+      and:
+        - 'kind == "idea"'
+        - 'status == "screened"'
+        - 'score >= 60'
+    order:
+      - file.name
+      - project
+      - score
+      - confidence
+      - track
+      - origin
+      - review_date
+    sort:
+      - property: score
+        direction: DESC
+  - type: table
+    name: Идеи
+    filters:
+      and:
+        - 'kind == "idea"'
+    order:
+      - file.name
+      - project
+      - status
+      - track
+      - score
+      - confidence
+      - portfolio_value
+      - review_date
+    sort:
+      - property: score
+        direction: DESC
+  - type: table
+    name: Эксперименты в работе
+    filters:
+      and:
+        - 'kind == "experiment"'
+        - 'status != "closed"'
+    order:
+      - file.name
+      - project
+      - idea
+      - method
+      - track
+      - status
+      - timebox
+      - review_date
+    sort:
+      - property: review_date
+        direction: ASC
+  - type: table
+    name: Review просрочен
+    filters:
+      and:
+        - 'review_date < today()'
+        - '!(status == "closed" || status == "parked" || status == "killed")'
+    order:
+      - file.name
+      - kind
+      - status
+      - owner
+      - review_date
+    sort:
+      - property: review_date
+        direction: ASC
+  - type: table
+    name: Portfolio без timebox
+    filters:
+      and:
+        - 'track == "portfolio"'
+        - 'timebox.isEmpty()'
+    order:
+      - file.name
+      - kind
+      - status
+      - owner
+  - type: table
+    name: Решения
+    filters:
+      and:
+        - 'kind == "experiment"'
+        - 'status == "closed"'
+    order:
+      - file.name
+      - idea
+      - method
+      - decision
+      - signal
+      - review_date
+    sort:
+      - property: review_date
+        direction: DESC
