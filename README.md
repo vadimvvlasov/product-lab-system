@@ -28,18 +28,20 @@ flowchart TD
 ## Как пользоваться
 
 1. Раз в месяц (или когда пул идей мельчает) провести sweep: веб-поиск болей и экспресс-оценка; по прошедшим идеям собрать свидетельства — [10-discover](system/10-discover.md), [inbox](inbox.md), шаблоны [idea](templates/idea.md) и [evidence](templates/evidence.md).
-2. Оценить идею и проверить фильтры G1 — [20-screen](system/20-screen.md).
-3. Спроектировать эксперимент и измерения до кода — [30-experiment](system/30-experiment.md), шаблон [experiment](templates/experiment.md).
-4. Если нужен код — реализовать минимальный срез и пройти [release checklist](templates/release-checklist.md) — [40-deliver](system/40-deliver.md).
+2. По прошедшим экспресс-оценку — сразу дешёвый тест S, обычно outreach к авторам сигналов ([leads.base](leads.base)) — [30-experiment](system/30-experiment.md), шаблон [experiment](templates/experiment.md) с полями ★.
+3. Перед тестом M/L или кодом — полный скоринг, выбор по времени до дохода и фильтры G1 — [20-screen](system/20-screen.md); спроектировать эксперимент и измерения до кода.
+4. Если нужен код — со стартового шаблона реализовать минимальный срез и пройти [release checklist](templates/release-checklist.md) по уровню риска — [40-deliver](system/40-deliver.md). Оплата — только после релиза работающей функции.
 5. Провести review и записать решение в тот же эксперимент — [30-experiment](system/30-experiment.md), § Review.
 
-Сводка по всем идеям и экспериментам — [registry.base](registry.base). Новые заметки создаются из `templates/` (Obsidian: «Insert template»).
+Сводка по идеям, экспериментам и доходности — [registry.base](registry.base), по лидам — [leads.base](leads.base). Новые заметки создаются из `templates/` (Obsidian: «Insert template»).
 
 ## Структура
 
 - `system/` — правила: [00-model](system/00-model.md) (ядро и словарь), `10-discover`, `20-screen`, `30-experiment`, `40-deliver`; `modules/` — расширения для LLM.
-- `templates/` — поля: `idea`, `evidence`, `experiment`, `release-checklist`, `project`.
-- `projects/<slug>/` — применение к продукту: карточка, `ideas/`, `experiments/`.
+- `templates/` — поля: `idea`, `evidence`, `experiment`, `lead`, `release-checklist`, `project`.
+- `projects/<slug>/` — применение к продукту: карточка, `ideas/`, `experiments/`, `leads/`.
+
+Стартовый шаблон для новых MVP ([40-deliver](system/40-deliver.md)) пока не выделен; источник — репозиторий anti-scope-creep, задача в [карточке проекта](projects/anti-scope-creep/README.md).
 
 Правило: документ в `system/` объясняет «зачем» и задаёт правила, шаблон задаёт поля, проект хранит экземпляры. Список полей или чек-лист живёт только в шаблоне; документы на него ссылаются.
 
@@ -52,7 +54,9 @@ flowchart TD
 5. **Keep business value and portfolio value separate.** Технически интересный проект может быть полезен для портфолио, даже если его коммерческий потенциал невысок; не смешивать эти выводы.
 6. **No evidence is an acceptable result.** Прекращение идеи после дешёвого эксперимента — нормальный исход, а не провал.
 7. **LLM organizes evidence; it does not create evidence.** Любой важный вывод должен прослеживаться до реального источника или события продукта.
-8. **Production changes need guardrails.** Тесты, безопасность, приватность, откат и мониторинг важны даже при однодневной реализации.
+8. **Charge for working code only.** Оплата запрашивается только за реализованную и выпущенную функцию; до этого цену проверяют показом цены и waitlist.
+9. **People before reach.** Первые пользователи приходят из прямого контакта с людьми, описавшими боль, а не из охвата постов.
+10. **Production changes need guardrails.** Тесты, безопасность, приватность, откат и мониторинг важны даже при однодневной реализации.
 
 ## Как подключить новый проект
 

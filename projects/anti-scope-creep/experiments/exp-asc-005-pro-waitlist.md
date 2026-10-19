@@ -15,6 +15,7 @@ launch_date: 2026-10-13
 review_date:
 timebox_hours:
 spent_hours:
+revenue:
 score_at_launch:
 confidence_at_launch:
 ---

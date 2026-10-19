@@ -9,6 +9,9 @@ confidence:
 portfolio_value:
 timebox_hours:
 test_cost:
+weeks_to_revenue:
+budget_until:
+budget_signal:
 owner:
 created:
 review_date:
@@ -17,7 +20,7 @@ origin:
 
 # [IDEA-ID]: [короткое название]
 
-> Значения `status`, `track` — [[00-model]]. Score, confidence, portfolio value — [[20-screen]]. `origin` — откуда пришла идея (`sweep-YYYY-MM`, `capture`, проект). `timebox_hours` обязателен для `track: portfolio`; `test_cost` — S / M / L.
+> Значения `status`, `track` — [[00-model]]. Score, confidence, portfolio value — [[20-screen]]; для теста S достаточно экспресс-оценки, секция «Scoring» заполняется перед тестом M/L. `origin` — откуда пришла идея (`sweep-YYYY-MM`, `capture`, проект). `timebox_hours` обязателен для `track: portfolio`; `test_cost` — S / M / L. `weeks_to_revenue` — оценка недель до работающего платного кода и первого клиента. `budget_until` и `budget_signal` — срок и целевой сигнал (L4/L5), иначе `park` / `kill`.
 
 ## 1. Проблема и сегмент
 

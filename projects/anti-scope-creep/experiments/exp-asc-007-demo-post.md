@@ -15,6 +15,7 @@ launch_date:
 review_date:
 timebox_hours:
 spent_hours:
+revenue:
 score_at_launch:
 confidence_at_launch:
 ---

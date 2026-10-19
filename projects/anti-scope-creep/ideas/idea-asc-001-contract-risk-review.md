@@ -9,6 +9,9 @@ confidence:
 portfolio_value:
 timebox_hours:
 test_cost:
+weeks_to_revenue:
+budget_until:
+budget_signal:
 owner:
 created: 2026-10-18
 review_date:
@@ -73,7 +76,7 @@ origin: учебный проект (AI Dev Tools Zoomcamp); продукт по
 
 ## 5. Следующий шаг
 
-**Самый дешёвый следующий тест** (`method`): `research` — evidence-таблица по сегменту freelancers + [[exp-asc-004-pain-post]].
+**Самый дешёвый следующий тест** (`method`): `research` — evidence-таблица по сегменту freelancers + [[exp-asc-004-outreach]].
 
 **Критическая гипотеза:** у сегмента есть частая и дорогая проблема с условиями договоров (вопросы 1, 4, 6).
 

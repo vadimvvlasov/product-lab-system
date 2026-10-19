@@ -5,6 +5,9 @@ status: active
 production:
 repository:
 verified_at:
+north_star: paying_customers
+paying_customers: 0
+revenue_total: 0
 ---
 
 # Project: [название]
@@ -34,4 +37,6 @@ verified_at:
 
 ## Идеи и эксперименты
 
-Ведутся в `ideas/` и `experiments/` этой папки; сводка — в [[registry.base]].
+Ведутся в `ideas/`, `experiments/` и `leads/` этой папки; сводка — в [[registry.base]] и [[leads.base]].
+
+**Главная метрика:** `paying_customers` (до готового платного кода — пользователи с L4).

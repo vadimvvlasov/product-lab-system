@@ -20,8 +20,8 @@ views:
       - origin
       - review_date
     sort:
-      - property: score
-        direction: DESC
+      - property: weeks_to_revenue
+        direction: ASC
   - type: table
     name: Идеи
     filters:
@@ -89,9 +89,9 @@ views:
     name: Перерасход времени
     filters:
       and:
-        - 'kind == "experiment"'
-        - 'status != "closed"'
-        - 'spent_hours >= timebox_hours'
+        - kind == "experiment"
+        - status != "closed"
+        - spent_hours >= timebox_hours
     order:
       - file.name
       - status
@@ -102,8 +102,8 @@ views:
     name: Калибровка
     filters:
       and:
-        - 'kind == "experiment"'
-        - 'status == "closed"'
+        - kind == "experiment"
+        - status == "closed"
     order:
       - file.name
       - idea
@@ -116,3 +116,46 @@ views:
     sort:
       - property: review_date
         direction: DESC
+  - type: table
+    name: Доходность
+    filters:
+      and:
+        - kind == "experiment"
+        - spent_hours > 0
+    order:
+      - file.name
+      - idea
+      - track
+      - status
+      - spent_hours
+      - revenue
+      - formula.revenue_per_hour
+      - signal
+    sort:
+      - property: idea
+        direction: ASC
+  - type: table
+    name: Часы portfolio
+    filters:
+      and:
+        - kind == "experiment"
+        - track == "portfolio"
+    order:
+      - file.name
+      - project
+      - status
+      - timebox_hours
+      - spent_hours
+  - type: table
+    name: Бюджет идеи истёк
+    filters:
+      and:
+        - kind == "idea"
+        - status == "testing" || status == "researching"
+        - budget_until < today()
+    order:
+      - file.name
+      - project
+      - budget_signal
+      - budget_until
+      - owner

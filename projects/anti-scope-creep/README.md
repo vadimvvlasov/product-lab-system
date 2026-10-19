@@ -5,6 +5,9 @@ status: active
 production: https://anti-scope-creep.vadimvlasov.workers.dev/
 repository: https://github.com/vadimvvlasov/anti-scope-creep/
 verified_at: 2026-10-19
+north_star: paying_customers
+paying_customers: 0
+revenue_total: 0
 ---
 
 # Project: Anti-Scope Creep
@@ -50,9 +53,14 @@ verified_at: 2026-10-19
 - Hacker News Show HN: технический запуск, если продукт соответствует правилам площадки; не делать его единственным каналом.
 - Отзывы/сравнения существующих contract review tools: искать систематические жалобы и неудовлетворённые потребности.
 
-Последовательность (каждый пост — отдельный эксперимент `method: post`):
+Первые пользователи — через прямой контакт, посты — дополнение:
 
-1. [[exp-asc-004-pain-post]] — последний неприятный случай с договором.
+- [[exp-asc-004-outreach]] — outreach к фрилансерам, описавшим проблемный договор (заменяет pain-discovery пост).
+- [[exp-asc-010-segment-agencies]] — тот же outreach во втором сегменте: агентства и малый бизнес.
+
+Посты (каждый — отдельный эксперимент `method: post`):
+
+1. ~~Pain discovery~~ — заменён outreach.
 2. [[exp-asc-006-case-post]] — разбор обезличенного условия.
 3. [[exp-asc-007-demo-post]] — работающий продукт.
 4. [[exp-asc-008-feature-post]] — конкретное улучшение (preview или History Search).
@@ -71,16 +79,21 @@ verified_at: 2026-10-19
 ## План применения Product Lab
 
 1. ~~Instrumentation и source attribution~~ — сделано в репо (`docs/analytics.md`).
-2. Предпросмотр псевдонимизированного текста как гипотеза доверия — [[exp-asc-001-anonymized-preview]].
-3. Посты, которые проверяют проблему и приводят целевую аудиторию; измерять core actions, а не только реакции — серия выше.
-4. Text-to-SQL как retention/utility experiment для пользователей с несколькими договорами — [[exp-asc-002-history-search]].
-5. Синтетика и LoRA как quality/portfolio workstream — [[exp-asc-003-synthetic-data-lora]]; не считать это свидетельством спроса.
-6. Discover/Screen для основной идеи ретроспективно: evidence-таблица и scoring в [[idea-asc-001-contract-risk-review]].
-7. На регулярном review объединять выводы из public evidence, production events, feedback и оплат.
+2. Outreach к авторам свежих тредов о проблемных договорах — [[exp-asc-004-outreach]]; второй сегмент — [[exp-asc-010-segment-agencies]]. Приоритет: это самый быстрый путь к первым пользователям уровня L4.
+3. Предпросмотр псевдонимизированного текста как гипотеза доверия — [[exp-asc-001-anonymized-preview]].
+4. Посты, которые проверяют проблему и приводят целевую аудиторию; измерять core actions, а не только реакции — серия выше.
+5. Text-to-SQL как retention/utility experiment для пользователей с несколькими договорами — [[exp-asc-002-history-search]].
+6. Синтетика и LoRA как quality/portfolio workstream — [[exp-asc-003-synthetic-data-lora]]; не считать это свидетельством спроса; в пределах 30% часов, пока нет L5.
+7. Discover/Screen для основной идеи ретроспективно: evidence-таблица и scoring в [[idea-asc-001-contract-risk-review]].
+8. Выделить стартовый шаблон для следующих MVP из репо (авторизация, `/events` + UTM, диалог цены/waitlist, деплой, smoke test, правила для агента) — задача в репо, не эксперимент.
+9. Оплата Pro — только после реализации платной функции; до этого цена проверяется waitlist ([[exp-asc-005-pro-waitlist]]).
+10. На регулярном review объединять выводы из public evidence, production events, feedback и оплат.
 
 ## Треки
 
 - **Business:** люди реально проверяют договоры, используют результаты, возвращаются и платят.
 - **Portfolio:** хороший eval pipeline, безопасный text-to-SQL agent, воспроизводимый LoRA benchmark, documented architecture.
 
-Обе цели допустимы, но отчётность и решения по ним ведутся отдельно. Сводка экспериментов — [[registry.base]].
+Обе цели допустимы, но отчётность и решения по ним ведутся отдельно. Сводка экспериментов — [[registry.base]], лидов — [[leads.base]] (заметки в `leads/`).
+
+**Главная метрика:** `paying_customers`; до релиза платной функции — пользователи с L4 из outreach.

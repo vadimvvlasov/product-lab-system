@@ -1,0 +1,46 @@
+filters:
+  and:
+    - '!file.inFolder("templates")'
+    - 'kind == "lead"'
+views:
+  - type: table
+    name: Следующий шаг
+    filters:
+      and:
+        - '!(status == "lost" || status == "paid")'
+        - 'next_date <= today()'
+    order:
+      - file.name
+      - project
+      - status
+      - next_step
+      - next_date
+      - experiment
+    sort:
+      - property: next_date
+        direction: ASC
+  - type: table
+    name: Воронка лидов
+    order:
+      - file.name
+      - project
+      - experiment
+      - segment
+      - channel
+      - status
+      - last_contact
+    sort:
+      - property: status
+        direction: ASC
+  - type: table
+    name: Новые (found)
+    filters:
+      and:
+        - 'status == "found"'
+    order:
+      - file.name
+      - project
+      - segment
+      - channel
+      - source_url
+      - found
