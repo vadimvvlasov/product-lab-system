@@ -13,7 +13,10 @@ owner:
 created: 2026-10-19
 launch_date:
 review_date:
-timebox:
+timebox_hours:
+spent_hours:
+score_at_launch:
+confidence_at_launch:
 ---
 
 # EXP-ASC-006: Case analysis: разбор обезличенного условия

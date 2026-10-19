@@ -13,12 +13,15 @@ owner:
 created:
 launch_date:
 review_date:
-timebox:
+timebox_hours:
+spent_hours:
+score_at_launch:
+confidence_at_launch:
 ---
 
 # [EXP-ID]: [название]
 
-> Значения полей: `method`, `status`, `decision`, `track`, `signal` — [[00-model]]. `post_goal` — только для `method: post`, см. [[10-discover]]. Правила — [[30-experiment]]. Секции, помеченные методом, для других методов удалить.
+> Значения полей: `method`, `status`, `decision`, `track`, `signal` — [[00-model]]. При запуске скопировать score и confidence идеи в `score_at_launch` / `confidence_at_launch`; часы вести в `spent_hours`. `post_goal` — только для `method: post`, см. [[10-discover]]. Правила — [[30-experiment]]. Секции, помеченные методом, для других методов удалить.
 
 ## Гипотеза
 
@@ -36,7 +39,7 @@ timebox:
 - **Guardrail metrics:** качество, ошибки, приватность, latency, отказы — что нельзя недопустимо ухудшить.
 - **События аналитики:**
 - **Достаточность данных:** сколько релевантных возможностей нужно увидеть; что считается слишком малой выборкой.
-- **Timebox / момент review:**
+- **Timebox (`timebox_hours`) / момент review:**
 - **Порог продолжения:**
 - **Порог остановки:**
 - **Если inconclusive:**
@@ -85,6 +88,10 @@ timebox:
 | Технические ошибки / нарушения guardrails | |
 
 **Самый сильный сигнал:** L_ — пример:
+
+**Часы:** потрачено `spent_hours` из `timebox_hours`.
+
+**Прогноз vs исход:** `score_at_launch` / `confidence_at_launch` → `decision`, `signal`. Что скринер переоценил или недооценил:
 
 **Ключевые цитаты / темы:**
 

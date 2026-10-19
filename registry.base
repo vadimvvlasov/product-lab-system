@@ -1,20 +1,21 @@
 filters:
   and:
     - '!file.inFolder("templates")'
-    - 'kind == "idea" || kind == "experiment"'
+    - kind == "idea" || kind == "experiment"
 views:
   - type: table
     name: Пул идей
     filters:
       and:
-        - 'kind == "idea"'
-        - 'status == "screened"'
-        - 'score >= 60'
+        - kind == "idea"
+        - status == "screened"
+        - score >= 60
     order:
       - file.name
       - project
       - score
       - confidence
+      - test_cost
       - track
       - origin
       - review_date
@@ -25,7 +26,7 @@ views:
     name: Идеи
     filters:
       and:
-        - 'kind == "idea"'
+        - kind == "idea"
     order:
       - file.name
       - project
@@ -33,6 +34,7 @@ views:
       - track
       - score
       - confidence
+      - test_cost
       - portfolio_value
       - review_date
     sort:
@@ -42,8 +44,8 @@ views:
     name: Эксперименты в работе
     filters:
       and:
-        - 'kind == "experiment"'
-        - 'status != "closed"'
+        - kind == "experiment"
+        - status != "closed"
     order:
       - file.name
       - project
@@ -51,7 +53,8 @@ views:
       - method
       - track
       - status
-      - timebox
+      - timebox_hours
+      - spent_hours
       - review_date
     sort:
       - property: review_date
@@ -60,7 +63,7 @@ views:
     name: Review просрочен
     filters:
       and:
-        - 'review_date < today()'
+        - review_date < today()
         - '!(status == "closed" || status == "parked" || status == "killed")'
     order:
       - file.name
@@ -75,15 +78,28 @@ views:
     name: Portfolio без timebox
     filters:
       and:
-        - 'track == "portfolio"'
-        - 'timebox.isEmpty()'
+        - track == "portfolio"
+        - timebox.isEmpty()
     order:
       - file.name
       - kind
       - status
       - owner
   - type: table
-    name: Решения
+    name: Перерасход времени
+    filters:
+      and:
+        - 'kind == "experiment"'
+        - 'status != "closed"'
+        - 'spent_hours >= timebox_hours'
+    order:
+      - file.name
+      - status
+      - timebox_hours
+      - spent_hours
+      - owner
+  - type: table
+    name: Калибровка
     filters:
       and:
         - 'kind == "experiment"'
@@ -92,9 +108,11 @@ views:
       - file.name
       - idea
       - method
+      - score_at_launch
+      - confidence_at_launch
       - decision
       - signal
-      - review_date
+      - spent_hours
     sort:
       - property: review_date
         direction: DESC
