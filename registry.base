@@ -172,12 +172,31 @@ views:
       - method
       - score_at_launch
       - confidence_at_launch
+      - primary_result
+      - exposure
       - decision
+      - decision_reason
       - signal
       - spent_hours
     sort:
       - property: review_date
         direction: DESC
+  - type: table
+    name: Закрытые без чисел
+    filters:
+      and:
+        - kind == "experiment"
+        - status == "closed"
+        - primary_result.isEmpty() || decision_reason.isEmpty()
+    order:
+      - file.name
+      - idea
+      - method
+      - decision
+      - exposure
+      - primary_result
+      - decision_reason
+      - owner
   - type: table
     name: Доходность
     filters:
@@ -191,6 +210,7 @@ views:
       - status
       - spent_hours
       - revenue
+      - cash_cost_usd
       - signal
     sort:
       - property: idea

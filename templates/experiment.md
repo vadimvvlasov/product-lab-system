@@ -9,6 +9,14 @@ track: business
 status: draft
 decision:
 signal:
+exposure:
+exposure_definition:
+primary_result:
+delivery_status:
+decision_reason:
+cash_cost_usd:
+payment_type:
+refunded:
 owner:
 created:
 launch_date:
@@ -24,7 +32,7 @@ confidence_at_launch:
 
 # [EXP-ID]: [название]
 
-> Значения полей: `method`, `status`, `decision`, `track`, `signal` — [[00-model]]. При запуске скопировать score и confidence идеи в `score_at_launch` / `confidence_at_launch`; часы вести в `spent_hours`. `post_goal` — только для `method: post`, см. [[10-discover]]. Правила — [[30-experiment]]. Секции, помеченные методом, для других методов удалить. ★ — обязательный минимум для теста стоимости S; для M/L обязательна вся секция «Дизайн». Для любого `ready`/`live` обязательны `timebox_hours > 0`, `review_date` или `review_condition`, `stop_rule` и `owner`; `draft` — исключение.
+> Значения полей: `method`, `status`, `decision`, `track`, `signal` — [[00-model]]. При запуске скопировать score и confidence идеи в `score_at_launch` / `confidence_at_launch`; часы вести в `spent_hours`. `post_goal` — только для `method: post`, см. [[10-discover]]. Правила — [[30-experiment]]. Секции, помеченные методом, для других методов удалить. ★ — обязательный минимум для теста стоимости S; для M/L обязательна вся секция «Дизайн». Для любого `ready`/`live` обязательны `timebox_hours > 0`, `review_date` или `review_condition`, `stop_rule` и `owner`; `draft` — исключение. `signal` — качественная сила свидетельства; числа исхода ведутся отдельно в `exposure` и `primary_result`. `delivery_status` — `delivered | partial | failed`; `payment_type` — `none | pilot | subscription | one-time`; `refunded` — yes/no.
 
 ## Гипотеза
 
@@ -38,10 +46,12 @@ confidence_at_launch:
 - **Out of scope:**
 - **Основное действие:** наблюдаемое действие, показывающее ценность.
 - ★ **Primary metric:** одна метрика, по которой принимается главное решение.
+- ★ **Минимальная экспозиция (`exposure_floor`):** сколько квалифицированных людей должно увидеть предложение до решения; стартовое значение по методу — [[30-experiment]], § Экспозиция. Фиксируется до старта.
+- ★ **Определение экспозиции (`exposure_definition`):** кого именно считаем увидевшим предложение и каких контактов считаем валидными.
 - **Baseline / control:** текущий baseline, контрольная группа или прежний сценарий.
 - **Guardrail metrics:** качество, ошибки, приватность, latency, отказы — что нельзя недопустимо ухудшить.
 - **События аналитики:**
-- **Достаточность данных:** сколько релевантных возможностей нужно увидеть; что считается слишком малой выборкой.
+- **Достаточность данных:** сколько релевантных возможностей нужно увидеть; что считается слишком малой выборкой. Для review нужны `exposure` и `exposure_floor`, а не только проценты.
 - ★ **Timebox (`timebox_hours`) / момент review (`review_date` или `review_condition`):**
 - ★ **Признаки остановки (`stop_rule`):**
 - ★ **Владелец (`owner`) и кто переводит в `review`:**
@@ -89,6 +99,10 @@ confidence_at_launch:
 - **Дата review:**
 - **Канал / кампания, период:**
 - **Подряд `more-evidence` на этом канале:** 0 / 1 / 2+ (с учётом предыдущих экспериментов на этом канале; на втором — решение `park` или `kill`, а не продление)
+- **Доставка (`delivery_status`):** delivered / partial / failed — чем подтверждена независимо:
+- **Экспозиция (`exposure`) / floor:** сколько квалифицированных людей увидели предложение из заранее заданного `exposure_floor`; по определению `exposure_definition`.
+- **Primary result:** числитель / знаменатель (или значение) по primary metric:
+- **Причина решения (`decision_reason`):** какие числа и качественные сигналы привели к `decision`:
 
 | Шаг | Количество |
 |---|---:|
@@ -106,9 +120,11 @@ confidence_at_launch:
 
 **Самый сильный сигнал:** L_ — пример:
 
-**Часы и доход:** потрачено `spent_hours` из `timebox_hours`; `revenue`; доход на час.
+**Деньги и часы:** `cash_cost_usd` — прямые денежные затраты (реклама, платные данные, подрядчики; не часы). `revenue` — gross-выручка. Чистый доход на час: `(revenue - cash_cost_usd) / spent_hours`. Потрачено `spent_hours` из `timebox_hours`.
 
-**Прогноз vs исход:** `score_at_launch` / `confidence_at_launch` → `decision`, `signal`. Что скринер переоценил или недооценил:
+**Платёж:** `payment_type` = none / pilot / subscription / one-time; `refunded` = yes / no; сколько платящих и сколько повторили использование.
+
+**Прогноз vs исход:** `score_at_launch` / `confidence_at_launch` → `primary_result` при `exposure`, затем `decision` и `decision_reason`; `signal` — качественная сила, не замена числам. Что скринер переоценил или недооценил:
 
 **Ключевые цитаты / темы:**
 
