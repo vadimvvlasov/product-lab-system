@@ -19,7 +19,7 @@ updated:
 - `author_or_thread` — если доступно и уместно.
 - `author_id` — стабильный идентификатор автора (handle или URL профиля); один `author_id` = один голос. Если не определён — `unknown`.
 - `verbatim_excerpt` — короткая точная выдержка; `paraphrase` — аккуратный пересказ, если цитата неуместна.
-- `evidence_type` — `pain | frequency | workaround | spend | willingness-to-pay | alternative-gap | acquisition-channel | counter-evidence`.
+- `evidence_type` — допустимые значения и их смысл — в [[00-model]], § Тип свидетельства.
 - `signal` — уровень L0–L5.
 - `source_quality` — `ok | suspicious | affiliated` или короткое пояснение: свежесть, аффилированность, рекламный характер.
 - `cluster` — один ID для кросспостов, перепечаток и почти идентичных фрагментов.
