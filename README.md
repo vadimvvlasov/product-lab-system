@@ -10,11 +10,11 @@
 flowchart TD
     A[Sweep: веб-поиск болей + экспресс-оценка] --> B[Idea + evidence]
     B --> C[Screen: score + confidence]
-    C -->|мало доказательств| D[Дешёвый эксперимент: research / post / demo / concierge]
-    D --> B
-    C -->|G1 пройден| E[Experiment: дизайн, G2]
-    E --> F[Deliver: минимальный срез, G3]
-    F --> G[Live: наблюдение]
+    C -->|мало доказательств| D[Дешёвый тест S: дизайн, G2]
+    C -->|полный score| E[Experiment: дизайн, G2]
+    E -->|методы без кода: ready → live| G[Live: наблюдение]
+    E -->|feature / launch + G1| F[Deliver: минимальный срез, G3]
+    F --> G
     D --> G
     G --> H[Review, G4: decision]
     H -->|iterate / more-evidence| E
@@ -29,8 +29,8 @@ flowchart TD
 
 1. Раз в месяц (или когда пул идей мельчает) провести sweep: веб-поиск болей и экспресс-оценка; по прошедшим идеям собрать свидетельства — [10-discover](system/10-discover.md), [inbox](inbox.md), шаблоны [idea](templates/idea.md) и [evidence](templates/evidence.md).
 2. По прошедшим экспресс-оценку — сразу дешёвый тест S, обычно outreach к авторам сигналов ([leads.base](leads.base)) — [30-experiment](system/30-experiment.md), шаблон [experiment](templates/experiment.md) с полями ★.
-3. Перед тестом M/L или кодом — полный скоринг, выбор по времени до дохода и фильтры G1 — [20-screen](system/20-screen.md); спроектировать эксперимент и измерения до кода.
-4. Если нужен код — со стартового шаблона реализовать минимальный срез и пройти [release checklist](templates/release-checklist.md) по уровню риска — [40-deliver](system/40-deliver.md). Оплата — только после релиза работающей функции.
+3. Перед тестом M/L или кодом — полный скоринг и выбор по времени до дохода ([20-screen](system/20-screen.md)); G1 проверяется у эксперимента `feature | launch` перед `building`, а не у идеи. Спроектировать эксперимент и измерения до кода.
+4. Если нужен код — со стартового шаблона реализовать минимальный срез и пройти [release checklist](templates/release-checklist.md) по уровню риска — [40-deliver](system/40-deliver.md). S-тесты идут `ready → live` без `building` и G3; `concierge` и `quality` тоже не требуют `building`, но `concierge` относится к M и требует полного скоринга. Оплата — только после релиза работающей функции.
 5. Провести review и записать решение в тот же эксперимент — [30-experiment](system/30-experiment.md), § Review.
 
 Сводка по идеям, экспериментам и доходности — [registry.base](registry.base), по лидам — [leads.base](leads.base). Новые заметки создаются из `templates/` (Obsidian: «Insert template»).
