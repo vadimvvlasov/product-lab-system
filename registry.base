@@ -18,6 +18,9 @@ views:
       - test_cost
       - track
       - origin
+      - weeks_to_revenue_low
+      - weeks_to_revenue_high
+      - weeks_to_revenue_basis
       - review_date
     sort:
       - property: weeks_to_revenue
@@ -36,6 +39,9 @@ views:
       - confidence
       - test_cost
       - portfolio_value
+      - weeks_to_revenue_low
+      - weeks_to_revenue_high
+      - weeks_to_revenue_basis
       - review_date
     sort:
       - property: score
