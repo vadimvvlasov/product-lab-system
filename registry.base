@@ -79,7 +79,7 @@ views:
     filters:
       and:
         - track == "portfolio"
-        - timebox.isEmpty()
+        - timebox_hours.isEmpty()
     order:
       - file.name
       - kind
@@ -97,6 +97,35 @@ views:
       - status
       - timebox_hours
       - spent_hours
+      - owner
+  - type: table
+    name: Live без timebox/review
+    filters:
+      and:
+        - kind == "experiment"
+        - status == "live"
+        - timebox_hours.isEmpty() || review_date.isEmpty()
+    order:
+      - file.name
+      - project
+      - idea
+      - method
+      - timebox_hours
+      - review_date
+      - owner
+  - type: table
+    name: Без review date
+    filters:
+      and:
+        - kind == "experiment"
+        - status != "closed"
+        - review_date.isEmpty()
+    order:
+      - file.name
+      - project
+      - status
+      - timebox_hours
+      - review_date
       - owner
   - type: table
     name: Калибровка
@@ -129,7 +158,6 @@ views:
       - status
       - spent_hours
       - revenue
-      - formula.revenue_per_hour
       - signal
     sort:
       - property: idea
