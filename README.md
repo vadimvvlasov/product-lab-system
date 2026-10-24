@@ -28,7 +28,7 @@ flowchart TD
 ## Как пользоваться
 
 1. Раз в месяц (или когда пул идей мельчает) провести sweep: веб-поиск болей и экспресс-оценка; по прошедшим идеям собрать свидетельства — [10-discover](system/10-discover.md), [inbox](inbox.md), шаблоны [idea](templates/idea.md) и [evidence](templates/evidence.md).
-2. По прошедшим экспресс-оценку — сразу дешёвый тест S, обычно outreach к авторам сигналов ([leads.base](leads.base)) — [30-experiment](system/30-experiment.md), шаблон [experiment](templates/experiment.md) с полями ★.
+2. По прошедшим экспресс-оценку — сразу дешёвый тест S, обычно outreach к авторам сигналов ([leads.base](leads.base)) — [30-experiment](system/30-experiment.md), короткая форма [experiment-s](templates/experiment-s.md) с полями ★; для M/L — полный [experiment](templates/experiment.md).
 3. Перед тестом M/L или production-кодом (`feature | launch`) — полный скоринг и выбор по времени до дохода ([20-screen](system/20-screen.md)); G1 проверяется у эксперимента `feature | launch` перед `building`, а не у идеи. `demo` — S-тест, полного скоринга не требует. Спроектировать эксперимент и измерения до кода.
 4. Если нужен production-код (`feature | launch`) — реализовать минимальный срез и пройти [release checklist](templates/release-checklist.md) по уровню риска — [40-deliver](system/40-deliver.md). Пока стартовый шаблон не выделен, можно начать с текущего проекта. S-тесты идут `ready → live` без `building` и G3; `concierge` и `quality` тоже не требуют `building`, но `concierge` относится к M и требует полного скоринга. Оплата — только после релиза работающей функции.
 5. Провести review и записать решение в тот же эксперимент — [30-experiment](system/30-experiment.md), § Review.
@@ -38,7 +38,7 @@ flowchart TD
 ## Структура
 
 - `system/` — правила: [00-model](system/00-model.md) (ядро и словарь), `10-discover`, `20-screen`, `30-experiment`, `40-deliver`; `modules/` — расширения для LLM.
-- `templates/` — поля: `idea`, `evidence`, `experiment`, `lead`, `release-checklist`, `project`.
+- `templates/` — поля: `idea`, `evidence`, `experiment`, `experiment-s` (короткая форма S), `lead`, `release-checklist`, `project`.
 - `projects/<slug>/` — применение к продукту: карточка, `ideas/`, `experiments/`, `leads/`.
 
 Стартовый шаблон для новых MVP ([40-deliver](system/40-deliver.md)) — цель, пока не выделен: это не блокер для G1/G3 и не обязательный ресурс. Источник — репозиторий anti-scope-creep, задача в [карточке проекта](projects/anti-scope-creep/README.md). Ссылка на шаблон появится здесь, когда он будет выделен.

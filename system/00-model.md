@@ -35,8 +35,10 @@
 | `project` | [project](../templates/project.md) | `projects/<slug>/README.md` |
 | `idea` | [idea](../templates/idea.md) | `projects/<slug>/ideas/` (или `ideas/`, если проекта ещё нет) |
 | `evidence` | [evidence](../templates/evidence.md) | рядом с идеей |
-| `experiment` | [experiment](../templates/experiment.md) | `projects/<slug>/experiments/` |
+| `experiment` | [experiment](../templates/experiment.md); для S — [experiment-s](../templates/experiment-s.md) | `projects/<slug>/experiments/` |
 | `lead` | [lead](../templates/lead.md) | `projects/<slug>/leads/`, сводка — [`leads.base`](../leads.base) |
+
+`kind` у S-теста остаётся `experiment`: короткая форма — тот же эксперимент, а не новый тип заметки. Она допустима только для `research | outreach | post | demo`; M/L и `feature | launch` ведутся по полному шаблону.
 
 Release checklist ([шаблон](../templates/release-checklist.md)) не отдельная заметка: его копируют в PR или в эксперимент с `method: feature | launch`.
 
@@ -140,7 +142,7 @@ Release checklist ([шаблон](../templates/release-checklist.md)) не от�
 | Из → в | Когда | Условие / gate | Артефакт / владелец |
 |---|---|---|---|
 | `— → draft` | создание | есть гипотеза и идея | карточка эксперимента, `owner` |
-| `draft → ready` | дизайн готов | G2: гипотеза (★) и секция «Дизайн»; для S — поля со ★; обязательны timebox/review/stop_rule/owner | шаблон эксперимента |
+| `draft → ready` | дизайн готов | G2: гипотеза (★) и секция «Дизайн»; для S — поля со ★; обязательны timebox/review/stop_rule/owner | шаблон эксперимента (полный или короткая форма S) |
 | `ready → live` | тест без кода | `method: research \| outreach \| post \| demo \| concierge \| quality`; G1 не требуется | запуск, `owner` |
 | `ready → building` | нужен код | только `method: feature \| launch`; G1 и полный score идеи | G1, issue/PR |
 | `building → live` | код готов к пользователям | G3: release checklist | релиз |
@@ -214,9 +216,9 @@ Gate — условие перехода. Содержимое каждого ga
 | Gate | Переход | Условие — где определено |
 |---|---|---|
 | **G1** | эксперимент `method: feature \| launch`, `ready → building` | полный score идеи и семь условий [20-screen](20-screen.md), § G1: авторизация эксперимента `feature \| launch` |
-| **G2** | эксперимент `draft → ready` | гипотеза (★) и для теста стоимости S — поля со ★ в «Дизайне» [шаблона эксперимента](../templates/experiment.md); для M/L — вся секция |
+| **G2** | эксперимент `draft → ready` | гипотеза (★) и для теста стоимости S — поля со ★ в «Дизайне» [шаблона эксперимента](../templates/experiment.md) или [короткой формы S](../templates/experiment-s.md); для M/L — вся секция полного шаблона |
 | **G3** | эксперимент `building → live` | [release checklist](../templates/release-checklist.md); только `feature \| launch` |
-| **G4** | эксперимент `review → closed` | заполнена секция «Результат и решение» шаблона эксперимента |
+| **G4** | эксперимент `review → closed` | заполнена секция «Результат и решение» полного шаблона или [короткой формы S](../templates/experiment-s.md) |
 
 G1 — авторизация на уровне эксперимента, а не переход идеи. Идея должна иметь полный score (`screened` или `testing` с завершённым score), но сам G1 проверяется у эксперимента с `method: feature | launch` перед `ready → building`.
 
@@ -280,7 +282,7 @@ G1 — авторизация на уровне эксперимента, а н�
 
 ## Доходность
 
-Главная метрика проекта на стадии до product-market fit — число платящих клиентов (`paying_customers` в карточке проекта); до готового платного кода — число пользователей с сигналом L4. Остальные метрики вспомогательные.
+Главная метрика проекта на стадии до product-market fit — число платящих клиентов (`paying_customers` в карточке проекта); до готового платного кода — число пользователей с сигналом L4. Для проекта с `north_star: portfolio_artifact` главная метрика — `portfolio_north_star`, а `paying_customers` не требуется. Остальные метрики вспомогательные.
 
 - **Деньги и часы.** В эксперименте ведутся `revenue` (gross, USD), `cash_cost_usd` (прямые денежные затраты: реклама, платные данные, подрядчики; не часы) и `spent_hours`. Вид «Доходность» в `registry.base` показывает эти поля; чистый доход на час считается как `(revenue - cash_cost_usd) / spent_hours`. Формула в Base пока не задана: значение считается вручную, пока отдельным изменением не добавлена проверенная формула. На каждом sweep время перераспределяется в пользу идей с лучшим чистым доходом или сигналом на час.
 - **Лимит портфельных часов.** Пока у проекта нет ни одного L5, на `track: portfolio` уходит не больше 30% часов месяца. Портфельный эксперимент стартует только с `timebox_hours` в пределах лимита.

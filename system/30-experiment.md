@@ -6,7 +6,7 @@
 
 ## Дизайн
 
-Обязательные поля (gate G2) — гипотеза (★) и секция «Дизайн» шаблона. Для теста стоимости S достаточно полей со ★: гипотеза, канал, primary metric, `exposure_floor`, `exposure_definition`, пороги, `timebox_hours`, условие review, `stop_rule` и `owner`. Для M/L заполняется вся секция. Пояснения к полям — прямо в шаблоне.
+Обязательные поля (gate G2) — гипотеза (★) и секция «Дизайн» шаблона. Для теста стоимости S достаточно полей со ★: гипотеза, канал, primary metric, `exposure_floor`, `exposure_definition`, пороги, `timebox_hours`, условие review, `stop_rule` и `owner`. Для S можно вести короткую форму [experiment-s](../templates/experiment-s.md): те же ★-поля G2 и решения G4, без секций и полей, нужных только M/L (например, `payment_type`/`refunded`). M/L заполняют полный [шаблон эксперимента](../templates/experiment.md) целиком.
 
 G1 — отдельный gate только для эксперимента с `method: feature | launch`: он проверяется перед `ready → building`, требует полного score идеи и семи условий из [20-screen](20-screen.md), § G1. Для `research | outreach | post | demo | concierge | quality` G1 не нужен: они идут `ready → live` без `building` и без G3.
 

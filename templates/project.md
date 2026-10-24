@@ -6,13 +6,14 @@ production:
 repository:
 verified_at:
 north_star: paying_customers
+portfolio_north_star:
 paying_customers: 0
 revenue_total: 0
 ---
 
 # Project: [название]
 
-> Карточка связывает проект с его идеями, экспериментами и репозиторием. Технические факты (архитектура, события, eval, ops) живут в репозитории — здесь только ссылки на них. `verified_at` — дата последней сверки ссылок и статуса с репозиторием и production.
+> Карточка связывает проект с его идеями, экспериментами и репозиторием. Технические факты (архитектура, события, eval, ops) живут в репозитории — здесь только ссылки на них. `verified_at` — дата последней сверки ссылок и статуса с репозиторием и production. `north_star` — `paying_customers | portfolio_artifact`. Для `portfolio_artifact` заполняется `portfolio_north_star`, а `paying_customers` не требуется.
 
 **Роль в Product Lab:**
 
@@ -39,4 +40,6 @@ revenue_total: 0
 
 Ведутся в `ideas/`, `experiments/` и `leads/` этой папки; сводка — в [[registry.base]] и [[leads.base]].
 
-**Главная метрика:** `paying_customers` (до готового платного кода — пользователи с L4).
+**Главная метрика:**
+- `north_star: paying_customers` — `paying_customers` (до готового платного кода — пользователи с L4).
+- `north_star: portfolio_artifact` — `portfolio_north_star`; `paying_customers` для такого проекта не обязателен.
