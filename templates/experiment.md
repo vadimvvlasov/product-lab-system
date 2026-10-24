@@ -13,7 +13,9 @@ owner:
 created:
 launch_date:
 review_date:
+review_condition:
 timebox_hours:
+stop_rule:
 spent_hours:
 revenue:
 score_at_launch:
@@ -22,7 +24,7 @@ confidence_at_launch:
 
 # [EXP-ID]: [название]
 
-> Значения полей: `method`, `status`, `decision`, `track`, `signal` — [[00-model]]. При запуске скопировать score и confidence идеи в `score_at_launch` / `confidence_at_launch`; часы вести в `spent_hours`. `post_goal` — только для `method: post`, см. [[10-discover]]. Правила — [[30-experiment]]. Секции, помеченные методом, для других методов удалить. ★ — обязательный минимум для теста стоимости S; для M/L обязательна вся секция «Дизайн».
+> Значения полей: `method`, `status`, `decision`, `track`, `signal` — [[00-model]]. При запуске скопировать score и confidence идеи в `score_at_launch` / `confidence_at_launch`; часы вести в `spent_hours`. `post_goal` — только для `method: post`, см. [[10-discover]]. Правила — [[30-experiment]]. Секции, помеченные методом, для других методов удалить. ★ — обязательный минимум для теста стоимости S; для M/L обязательна вся секция «Дизайн». Для любого `ready`/`live` обязательны `timebox_hours > 0`, `review_date` или `review_condition`, `stop_rule` и `owner`; `draft` — исключение.
 
 ## Гипотеза
 
@@ -40,10 +42,13 @@ confidence_at_launch:
 - **Guardrail metrics:** качество, ошибки, приватность, latency, отказы — что нельзя недопустимо ухудшить.
 - **События аналитики:**
 - **Достаточность данных:** сколько релевантных возможностей нужно увидеть; что считается слишком малой выборкой.
-- ★ **Timebox (`timebox_hours`) / момент review:**
+- ★ **Timebox (`timebox_hours`) / момент review (`review_date` или `review_condition`):**
+- ★ **Признаки остановки (`stop_rule`):**
+- ★ **Владелец (`owner`) и кто переводит в `review`:**
 - ★ **Порог продолжения:**
 - ★ **Порог остановки:**
 - **Если inconclusive:**
+- **Если timebox истёк:** сначала доставка, затем экспозиция, затем результат; без подтверждённой доставки — `more-evidence`, не `kill`.
 - **Rollback / feature flag** (`feature | launch`): как быстро выключить или вернуться к прежнему поведению.
 
 ### Outreach (`outreach`)
@@ -83,6 +88,7 @@ confidence_at_launch:
 
 - **Дата review:**
 - **Канал / кампания, период:**
+- **Подряд `more-evidence` на этом канале:** 0 / 1 / 2+ (с учётом предыдущих экспериментов на этом канале; на втором — решение `park` или `kill`, а не продление)
 
 | Шаг | Количество |
 |---|---:|

@@ -104,7 +104,7 @@ views:
       and:
         - kind == "experiment"
         - status == "live"
-        - timebox_hours.isEmpty() || review_date.isEmpty()
+        - timebox_hours.isEmpty() || (review_date.isEmpty() && review_condition.isEmpty())
     order:
       - file.name
       - project
@@ -112,6 +112,7 @@ views:
       - method
       - timebox_hours
       - review_date
+      - review_condition
       - owner
   - type: table
     name: Без review date
@@ -119,13 +120,45 @@ views:
       and:
         - kind == "experiment"
         - status != "closed"
-        - review_date.isEmpty()
+        - review_date.isEmpty() && review_condition.isEmpty()
     order:
       - file.name
       - project
       - status
       - timebox_hours
       - review_date
+      - review_condition
+      - owner
+  - type: table
+    name: Эксперименты без timebox/review
+    filters:
+      and:
+        - kind == "experiment"
+        - status != "draft"
+        - status != "closed"
+        - timebox_hours.isEmpty() || (review_date.isEmpty() && review_condition.isEmpty()) || stop_rule.isEmpty() || owner.isEmpty()
+    order:
+      - file.name
+      - project
+      - status
+      - timebox_hours
+      - review_date
+      - review_condition
+      - stop_rule
+      - owner
+  - type: table
+    name: Идеи без бюджета
+    filters:
+      and:
+        - kind == "idea"
+        - status == "testing" || status == "researching"
+        - budget_until.isEmpty() || budget_signal.isEmpty()
+    order:
+      - file.name
+      - project
+      - status
+      - budget_until
+      - budget_signal
       - owner
   - type: table
     name: Калибровка

@@ -20,7 +20,7 @@ origin:
 
 # [IDEA-ID]: [короткое название]
 
-> Значения `status`, `track` — [[00-model]]. Score, confidence, portfolio value — [[20-screen]]; для теста S достаточно экспресс-оценки, секция «Scoring» заполняется перед тестом M/L. `origin` — откуда пришла идея (`sweep-YYYY-MM`, `capture`, проект). `timebox_hours` обязателен для `track: portfolio`; `test_cost` — S / M / L. `weeks_to_revenue` — оценка недель до работающего платного кода и первого клиента. `budget_until` и `budget_signal` — срок и целевой сигнал (L4/L5), иначе `park` / `kill`.
+> Значения `status`, `track` — [[00-model]]. Score, confidence, portfolio value — [[20-screen]]; для теста S достаточно экспресс-оценки, секция «Scoring» заполняется перед тестом M/L. `origin` — откуда пришла идея (`sweep-YYYY-MM`, `capture`, проект). `timebox_hours` обязателен для `track: portfolio`; `test_cost` — S / M / L. `weeks_to_revenue` — оценка недель до работающего платного кода и первого клиента. `budget_until` и `budget_signal` обязательны для `status: testing`; это срок и целевой сигнал (L4/L5), иначе `park` / `kill`. `review_date` — необязательная плановая дата пересмотра бюджета/статуса, она не заменяет обязательный `budget_until`.
 
 ## 1. Проблема и сегмент
 
