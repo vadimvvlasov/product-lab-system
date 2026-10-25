@@ -1,7 +1,7 @@
 filters:
   and:
     - '!file.inFolder("templates")'
-    - kind == "idea" || kind == "experiment"
+    - kind == "idea" || kind == "experiment" || kind == "project"
 views:
   - type: table
     name: Пул идей
@@ -84,6 +84,7 @@ views:
     name: Review просрочен
     filters:
       and:
+        - kind == "experiment"
         - review_date < today()
         - '!(status == "closed" || status == "parked" || status == "killed")'
     order:
@@ -99,6 +100,7 @@ views:
     name: Portfolio без timebox
     filters:
       and:
+        - kind == "experiment"
         - track == "portfolio"
         - timebox_hours.isEmpty()
     order:
@@ -248,6 +250,48 @@ views:
       - status
       - timebox_hours
       - spent_hours
+  - type: table
+    name: Проект без бюджета часов
+    filters:
+      and:
+        - kind == "project"
+        - month_hours_budget.isEmpty()
+    order:
+      - file.name
+      - status
+      - north_star
+      - portfolio_north_star
+      - month_hours_budget
+  - type: table
+    name: "Portfolio: неизвестные часы"
+    filters:
+      and:
+        - kind == "experiment"
+        - track == "portfolio"
+        - status != "draft"
+        - spent_hours.isEmpty()
+    order:
+      - file.name
+      - project
+      - status
+      - timebox_hours
+      - spent_hours
+      - owner
+  - type: table
+    name: Без spent_hours
+    filters:
+      and:
+        - kind == "experiment"
+        - status != "draft"
+        - spent_hours.isEmpty()
+    order:
+      - file.name
+      - project
+      - track
+      - status
+      - timebox_hours
+      - spent_hours
+      - owner
   - type: table
     name: Бюджет идеи истёк
     filters:

@@ -33,7 +33,7 @@ confidence_at_launch:
 
 # [EXP-ID]: [название]
 
-> Значения полей: `method`, `status`, `decision`, `track`, `signal` — [[00-model]]. При запуске скопировать score и confidence идеи в `score_at_launch` / `confidence_at_launch`; часы вести в `spent_hours`. `post_goal` — только для `method: post`, значения — [[00-model]], § Цель поста. Правила — [[30-experiment]]. Секции, помеченные методом, для других методов удалить. ★ — обязательный минимум для теста стоимости S: гипотеза и поля со ★ в «Дизайне»; для M/L обязательна вся секция «Дизайн». Для любого `ready`/`live` обязательны `timebox_hours > 0`, `review_date` или `review_condition`, `stop_rule` и `owner`; `draft` — исключение. `signal` — качественная сила свидетельства; числа исхода ведутся отдельно в `exposure` и `primary_result`. `delivery_status` — `delivered | partial | failed`; `payment_type` — `none | pilot | subscription | one-time`; `pilot` — оплата за выполнимую услугу по [[00-model]], § Правило оплаты; `refunded` — yes/no. G1 — только для `method: feature | launch` перед `ready → building`; методы без кода (`research | outreach | post | demo | concierge | quality`) идут `ready → live` без `building`; G3 — только для `feature | launch`; G4 — `review → closed`.
+> Значения полей: `method`, `status`, `decision`, `track`, `signal` — [[00-model]]. При запуске скопировать score и confidence идеи в `score_at_launch` / `confidence_at_launch`; часы вести в `spent_hours`; пустой `spent_hours` — `unknown`, не `0`. `post_goal` — только для `method: post`, значения — [[00-model]], § Цель поста. Правила — [[30-experiment]]. Секции, помеченные методом, для других методов удалить. ★ — обязательный минимум для теста стоимости S: гипотеза и поля со ★ в «Дизайне»; для M/L обязательна вся секция «Дизайн». Для любого `ready`/`live` обязательны `timebox_hours > 0`, `review_date` или `review_condition`, `stop_rule` и `owner`; `draft` — исключение. `signal` — качественная сила свидетельства; числа исхода ведутся отдельно в `exposure` и `primary_result`. `delivery_status` — `delivered | partial | failed`; `payment_type` — `none | pilot | subscription | one-time`; `pilot` — оплата за выполнимую услугу по [[00-model]], § Правило оплаты; `refunded` — yes/no. G1 — только для `method: feature | launch` перед `ready → building`; методы без кода (`research | outreach | post | demo | concierge | quality`) идут `ready → live` без `building`; G3 — только для `feature | launch`; G4 — `review → closed`. Для `quality` заполняется секция «Quality»; `primary_result` включает сравнение с baseline, а `decision: scale` означает keep/roll out технического решения, не коммерческое масштабирование. Для следующего шага после business/portfolio `scale` заполняется секция «Scale-шаг»; без неё `decision: scale` в этих треках не ставится.
 
 ## Гипотеза (G2, ★)
 
@@ -80,6 +80,29 @@ confidence_at_launch:
 - **URL после публикации:**
 - **Текст / тезис:**
 
+### Quality (`quality`)
+
+- **Baseline и целевая метрика:**
+- **Test set и версия evaluation dataset:**
+- **Допустимые регрессии:**
+- **Критические ошибки и жёсткие лимиты:**
+- **Стоимость исполнения:**
+
+### Scale-шаг (`scale`)
+
+Заполняется, если это следующий ограниченный шаг после решения `scale`.
+
+- **Повторяемый спрос:** какие L4/L5 и повторное использование его подтверждают.
+- **Оплата:** L5, если проверяется платёжеспособный спрос.
+- **Канал привлечения:**
+- **Стоимость шага:** деньги и часы.
+- **Доступная мощность:**
+- **Критические риски и `stop_rule`:**
+- **Бюджет и review:** `timebox_hours`, `review_date` / `review_condition`.
+- **Что не масштабируем в этом шаге:**
+
+Для `portfolio` поля L4/L5 и канал можно отметить `n/a`; бюджет, review и то, какой артефакт используем/развиваем, обязательны.
+
 ## Риски
 
 - Приватность / security:
@@ -104,6 +127,7 @@ confidence_at_launch:
 - **Доставка (`delivery_status`):** delivered / partial / failed — чем подтверждена независимо:
 - **Экспозиция (`exposure`) / floor:** сколько квалифицированных людей увидели предложение из заранее заданного `exposure_floor`; по определению `exposure_definition`.
 - **Primary result:** числитель / знаменатель (или значение) по primary metric:
+- **Сравнение с baseline (`quality`):** целевая метрика до/после, допустимые регрессии, критические ошибки:
 - **Причина решения (`decision_reason`):** какие числа и качественные сигналы привели к `decision`:
 
 | Шаг | Количество |
