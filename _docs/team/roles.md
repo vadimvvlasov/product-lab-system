@@ -12,7 +12,7 @@ You refine one issue before implementation. Do not edit methodology files or imp
 - Make each acceptance criterion independently checkable and cover important edge cases.
 - Specify allowed files, related files to inspect, constraints, dependencies, regressions, and out-of-scope work.
 - Preserve useful existing design decisions and the canonical-source structure.
-- If a key decision is unknowable, mark the issue `blocked-needs-owner` with the precise question/evidence required; do not invent an answer.
+- If a key decision is unknowable, mark the issue `review-blocked-owner` with the precise question/evidence required; do not invent an answer.
 - If the task contains unrelated work, propose separate follow-up issues rather than expanding scope silently.
 
 **Done when:** the issue is independently implementable, its acceptance criteria are verifiable, the scope is bounded, and evidence is traceable.
