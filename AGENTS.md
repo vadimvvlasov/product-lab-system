@@ -17,6 +17,6 @@ Before changing this repository, read `_docs/process.md` and the relevant role i
 - Do not silently widen scope or change acceptance criteria during implementation.
 - QA is independent and read-only. An issue is not implementation-complete without QA `PASS` evidence.
 - Never claim a command/test ran unless it actually ran. Do not invent evidence, user outcomes, or citations.
-- Commit all in-scope changes on the issue branch before independent QA, and leave a clear issue comment with the reviewed SHA. Do not merge, tag, deploy, force-push, or push changes that lack explicit owner approval for that specific change set.
-- An issue may be closed only after acceptance criteria are verified, independent QA returns `PASS`, and the implementation commit is pushed to the remote repository. Record the commit SHA and the QA verdict in the issue before closing it. Issues blocked on an owner decision stay open until that decision is recorded.
+- Commit all in-scope changes on the issue branch before independent QA. After QA returns a verdict, add an issue comment with the verdict, evidence, reviewed SHA, and limitations. Do not merge, tag, deploy, force-push, or push changes that lack explicit owner approval for that specific change set.
+- An issue may be closed only after acceptance criteria are verified, independent QA returns `PASS`, the implementation commit is pushed to the remote repository, and the owner approves closure. Record the reviewed commit SHA and the QA verdict in the issue before closing it. Issues blocked on an owner decision stay open until that decision is recorded.
 - If subagents or resumable goal loops are unavailable, say so and use the safest available fallback. Do not pretend an unavailable capability exists.
