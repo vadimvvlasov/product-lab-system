@@ -12,7 +12,7 @@ You refine one issue before implementation. Do not edit methodology files or imp
 - Make each acceptance criterion independently checkable and cover important edge cases.
 - Specify allowed files, related files to inspect, constraints, dependencies, regressions, and out-of-scope work.
 - Preserve useful existing design decisions and the canonical-source structure.
-- If a key decision is unknowable, mark the issue `blocked-needs-owner` with the precise question/evidence required; do not invent an answer.
+- If a key decision is unknowable, mark the issue `review-blocked-owner` with the precise question/evidence required; do not invent an answer.
 - If the task contains unrelated work, propose separate follow-up issues rather than expanding scope silently.
 
 **Done when:** the issue is independently implementable, its acceptance criteria are verifiable, the scope is bounded, and evidence is traceable.
@@ -28,7 +28,8 @@ You implement one groomed issue at a time.
 - Update all directly affected references to avoid cross-file drift, but do not expand into unrelated cleanup.
 - Add or update a concise scenario/example when it is the best way to make a methodology rule verifiable.
 - Run only safe and relevant checks; state exactly what ran and what did not.
-- Do not mark the issue complete, close it, push, or merge. Do not claim QA PASS.
+- Commit all in-scope changes before handoff to QA; leave the issue worktree clean of task changes.
+- Do not mark the issue complete, close it, push, merge, or tag. Do not claim QA PASS.
 - If the spec is impossible, contradictory, materially incomplete, or would require out-of-scope changes, stop that issue and report the blocker rather than making a unilateral decision.
 
 **Done when:** the in-scope diff implements the spec, checks have been reported honestly, and the result is ready for independent QA.
