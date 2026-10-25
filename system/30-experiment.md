@@ -8,7 +8,7 @@
 
 Обязательные поля (gate G2) — гипотеза (★) и секция «Дизайн» шаблона. Для теста стоимости S достаточно полей со ★: гипотеза, канал, primary metric, `exposure_floor`, `exposure_definition`, пороги, `timebox_hours`, условие review, `stop_rule` и `owner`. Для S можно вести короткую форму [experiment-s](../templates/experiment-s.md): те же ★-поля G2 и решения G4, без секций и полей, нужных только M/L (например, `payment_type`/`refunded`). M/L заполняют полный [шаблон эксперимента](../templates/experiment.md) целиком.
 
-G1 — отдельный gate только для эксперимента с `method: feature | launch`: он проверяется перед `ready → building`, требует полного score идеи и семи условий из [20-screen](20-screen.md), § G1. Для `research | outreach | post | demo | concierge | quality` G1 не нужен: они идут `ready → live` без `building` и без G3.
+G1 — отдельный gate только для эксперимента с `method: feature | launch`: он проверяется перед `ready → building` и требует полного score идеи ≥ 75, confidence A/B и семи условий из [20-screen](20-screen.md), § G1. Идея C или score ниже 75 не проходит G1. Для `research | outreach | post | demo | concierge | quality` G1 не нужен: они идут `ready → live` без `building` и без G3.
 
 ### Примеры гипотез
 
@@ -63,7 +63,7 @@ G1 — отдельный gate только для эксперимента с `
 Если нужен код:
 
 1. записать гипотезу, событие успеха, guardrails и способ отключения — `draft → ready` (G2);
-2. пройти G1: полный score идеи и семь условий из [20-screen](20-screen.md), § G1 — до `ready → building`;
+2. пройти G1: полный score идеи ≥ 75, confidence A/B и семь условий из [20-screen](20-screen.md), § G1 — до `ready → building`;
 3. реализовать минимальный вертикальный срез по [40-deliver](40-deliver.md);
 4. пройти [release checklist](../templates/release-checklist.md) — `building → live` (G3);
 5. при возможности включить для ограниченной группы;

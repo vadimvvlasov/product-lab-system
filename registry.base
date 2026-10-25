@@ -47,6 +47,21 @@ views:
       - property: score
         direction: DESC
   - type: table
+    name: C в тесте
+    filters:
+      and:
+        - kind == "idea"
+        - confidence == "C"
+        - status == "testing"
+        - test_cost == "S"
+    order:
+      - file.name
+      - project
+      - score
+      - test_cost
+      - budget_until
+      - owner
+  - type: table
     name: Эксперименты в работе
     filters:
       and:
