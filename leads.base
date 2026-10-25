@@ -1,14 +1,14 @@
 filters:
   and:
     - '!file.inFolder("templates")'
-    - 'kind == "lead"'
+    - kind == "lead"
 views:
   - type: table
     name: Следующий шаг
     filters:
       and:
         - '!(status == "lost" || status == "paid")'
-        - 'next_date <= today()'
+        - next_date <= today()
     order:
       - file.name
       - project
@@ -36,7 +36,7 @@ views:
     name: Новые (found)
     filters:
       and:
-        - 'status == "found"'
+        - status == "found"
     order:
       - file.name
       - project
