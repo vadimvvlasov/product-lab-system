@@ -41,5 +41,5 @@ revenue_total: 0
 Ведутся в `ideas/`, `experiments/` и `leads/` этой папки; сводка — в [[registry.base]] и [[leads.base]].
 
 **Главная метрика:**
-- `north_star: paying_customers` — `paying_customers` (до готового платного кода — пользователи с L4).
+- `north_star: paying_customers` — `paying_customers` (пока платежей нет — пользователи с L4).
 - `north_star: portfolio_artifact` — `portfolio_north_star`; `paying_customers` для такого проекта не обязателен.

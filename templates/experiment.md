@@ -33,7 +33,7 @@ confidence_at_launch:
 
 # [EXP-ID]: [название]
 
-> Значения полей: `method`, `status`, `decision`, `track`, `signal` — [[00-model]]. При запуске скопировать score и confidence идеи в `score_at_launch` / `confidence_at_launch`; часы вести в `spent_hours`. `post_goal` — только для `method: post`, значения — [[00-model]], § Цель поста. Правила — [[30-experiment]]. Секции, помеченные методом, для других методов удалить. ★ — обязательный минимум для теста стоимости S: гипотеза и поля со ★ в «Дизайне»; для M/L обязательна вся секция «Дизайн». Для любого `ready`/`live` обязательны `timebox_hours > 0`, `review_date` или `review_condition`, `stop_rule` и `owner`; `draft` — исключение. `signal` — качественная сила свидетельства; числа исхода ведутся отдельно в `exposure` и `primary_result`. `delivery_status` — `delivered | partial | failed`; `payment_type` — `none | pilot | subscription | one-time`; `refunded` — yes/no. G1 — только для `method: feature | launch` перед `ready → building`; методы без кода (`research | outreach | post | demo | concierge | quality`) идут `ready → live` без `building`; G3 — только для `feature | launch`; G4 — `review → closed`.
+> Значения полей: `method`, `status`, `decision`, `track`, `signal` — [[00-model]]. При запуске скопировать score и confidence идеи в `score_at_launch` / `confidence_at_launch`; часы вести в `spent_hours`. `post_goal` — только для `method: post`, значения — [[00-model]], § Цель поста. Правила — [[30-experiment]]. Секции, помеченные методом, для других методов удалить. ★ — обязательный минимум для теста стоимости S: гипотеза и поля со ★ в «Дизайне»; для M/L обязательна вся секция «Дизайн». Для любого `ready`/`live` обязательны `timebox_hours > 0`, `review_date` или `review_condition`, `stop_rule` и `owner`; `draft` — исключение. `signal` — качественная сила свидетельства; числа исхода ведутся отдельно в `exposure` и `primary_result`. `delivery_status` — `delivered | partial | failed`; `payment_type` — `none | pilot | subscription | one-time`; `pilot` — оплата за выполнимую услугу по [[00-model]], § Правило оплаты; `refunded` — yes/no. G1 — только для `method: feature | launch` перед `ready → building`; методы без кода (`research | outreach | post | demo | concierge | quality`) идут `ready → live` без `building`; G3 — только для `feature | launch`; G4 — `review → closed`.
 
 ## Гипотеза (G2, ★)
 
@@ -117,7 +117,7 @@ confidence_at_launch:
 | Возможности / попытки | |
 | Завершили основной сценарий | |
 | Повторно использовали | |
-| Платежи (`revenue`, только за работающий код) | |
+| Платежи (`revenue`, за работающую функцию или выполнимый пилот) | |
 | Технические ошибки / нарушения guardrails | |
 
 **Самый сильный сигнал:** L_ — пример:
