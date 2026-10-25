@@ -23,16 +23,33 @@ Use `_docs/team/roles.md`. Prefer separate subagent/context per role when the pl
 3. **Methodology Engineer** implements only the groomed specification and stays within the allowed file scope.
 4. **Independent QA** checks the actual diff and the specification. It must not fix the work.
 
+## Branches, worktrees, and commits
+
+Use trunk-based development with short-lived branches. `main` is the only long-lived branch while the repository has one supported line. Do not introduce a long-lived `develop` branch or `release/*` branches without an explicit owner decision.
+
+- **One issue, one branch.** Create a branch from current `main` before implementation. Name it `issue/<number>-<slug>`. For an owner-directed change without an issue, use `docs/<slug>` or `process/<slug>` and state why in the commit message.
+- **One writer per worktree.** Create a separate `git worktree` for each active branch. Do not let two agents edit the same worktree or branch. QA gets a separate read-only worktree checked out at the exact commit under review.
+- **Short-lived branches.** Keep a branch to one issue. Rebase on `main` only while the branch is private and no QA or other agent is reviewing it. Never rewrite a branch after handoff.
+- **Logical commits.** Commit at meaningful checkpoints so work can be recovered and handed off. Keep methodology, project records, product artifacts, and unrelated cleanup in separate commits. Do not create one giant end-of-run commit when the changes are separable.
+- **Explicit paths only.** Stage named files or directories. Never use `git add -A`, `git add .`, or `git commit -a`. Never stage pre-existing or unrelated worktree changes.
+- **Commit messages.** State what changed and why, and reference the issue when one exists, for example `docs(experiment): add paid post worked example (#16)`. Do not claim checks or QA that did not run.
+- **Role boundaries.** The orchestrator creates the branch and worktree before dispatch. The Engineer may create checkpoint commits on the issue branch but must not push, merge, or close. PM and QA do not commit; QA reviews the fixed SHA and never edits files.
+- **Fixed SHA for handoff.** The orchestrator records the branch, commit SHA, and worktree path in the issue or handoff. QA reviews that SHA, not a moving branch. If the SHA changes, the previous QA verdict is invalid and QA must be repeated.
+- **Integration.** Merge only after independent QA `PASS` and explicit owner approval for that change set. Prefer squash merge for agent branches. Delete the branch after merge. Do not force-push a shared branch.
+- **Release.** Tag `main` with `vX.Y.Z` after owner approval and changelog update. Do not create `release/*` branches unless the owner explicitly requires parallel supported versions.
+- **Hotfix.** Use `hotfix/<slug>` from `main`; verify it, merge it back, and tag a patch release. Do not mix a hotfix with unrelated work.
+- **Push is separate.** A local commit or QA `PASS` does not authorize push, merge, deploy, publication, payment, or issue closure. Push requires explicit owner approval for that change set. Close an issue only after the commit is reachable from the remote and the QA verdict and SHA are recorded.
+
 ## One-issue lifecycle
 
-1. Select the highest-priority eligible open issue labelled `product-lab-review` that has none of the terminal-state labels/markers (`review-qa-pass-local`, `review-blocked-owner`, `review-skipped`), respecting explicit dependencies. Mark it `review-in-progress`. Within equal priority, choose the smallest independently verifiable task first.
+1. Select the highest-priority eligible open issue labelled `product-lab-review` that has none of the terminal-state labels/markers (`review-qa-pass-local`, `review-blocked-owner`, `review-skipped`), respecting explicit dependencies. Mark it `review-in-progress`. Create the issue branch and a separate worktree from current `main`; record the branch and worktree path in the issue. Within equal priority, choose the smallest independently verifiable task first.
 2. Read the issue, relevant source files, and current repository instructions. The PM writes or updates the issue spec using `_docs/task-template.md`.
 3. If the issue is ambiguous, conflicts with the canonical model, lacks a verifiable outcome, requires a fundamental owner decision, or depends on evidence not available, add `review-blocked-owner`, remove `review-in-progress`, comment with the exact blocker, and move to the next independent issue. Do not invent the missing decision.
-4. The Engineer implements the approved spec in the allowed files only. Preserve canonical definitions and cross-file consistency. Do not change acceptance criteria.
-5. Independent QA returns `PASS` or `FAIL` for every criterion, with evidence and the exact checks run. QA does not edit files.
+4. The Engineer implements the approved spec in the allowed files only, on the issue branch in its worktree. Preserve canonical definitions and cross-file consistency. Do not change acceptance criteria. Checkpoint commits are allowed on the issue branch; do not push, merge, or close.
+5. Independent QA returns `PASS` or `FAIL` for every criterion, with evidence and the exact checks run. QA works in a separate read-only worktree at the fixed commit SHA and does not edit files.
 6. On `FAIL`, send the exact failures to the Engineer. Allow at most **two repair attempts** for this issue. If it still fails, or the spec itself is defective, add `review-blocked-owner`, remove `review-in-progress`, and move to the next independent issue.
-7. On `PASS`, verify the issue diff and repository state. Commit only the current issue's changes locally if they can be staged without including pre-existing or unrelated work. If safe selective staging is not possible, do not commit; report the reason.
-8. Add an issue comment with QA verdict, evidence, commit SHA, and limitations. Add `review-qa-pass-local` and remove `review-in-progress`. Push the commit to the remote only with explicit owner approval for that change set, then verify it is reachable from the remote branch. Close the issue only after acceptance criteria are verified, QA has passed, and the implementation commit is on the remote; record the commit SHA and QA verdict in the closing comment. Blocked-owner and skipped issues stay open.
+7. On `PASS`, verify the issue diff and repository state on the issue branch. The orchestrator records the final commit SHA and ensures that commit contains only the current issue's changes. If safe selective staging is not possible, do not commit; report the reason.
+8. Add an issue comment with QA verdict, evidence, branch, commit SHA, and limitations. Add `review-qa-pass-local` and remove `review-in-progress`. Push the branch/commit to the remote only with explicit owner approval for that change set, then verify it is reachable from the remote branch. Close the issue only after acceptance criteria are verified, QA has passed, and the implementation commit is on the remote; record the commit SHA and QA verdict in the closing comment. Blocked-owner and skipped issues stay open.
 9. Continue with the next eligible issue.
 
 ## Safety and scope
