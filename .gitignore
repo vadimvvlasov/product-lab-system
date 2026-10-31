@@ -1,19 +1,23 @@
-# ---- Obsidian ----
-# Per-user workspace state (window layout, open tabs, recent files).
-# Keep shared config (app.json, appearance.json, plugins, etc.) under version control.
-.obsidian/workspace.json
-.obsidian/workspace-mobile.json
-.obsidian/workspace-mobile-iphone.json
-.obsidian/workspace-mobile-android.json
+# Runtime state
+runs/
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+*.pyd
 
-# Obsidian runtime cache and internal trash
-.obsidian/cache
-.trash/
+# Test coverage
+.coverage
+htmlcov/
 
-# ---- OS / Editor ----
-.DS_Store
-Thumbs.db
-desktop.ini
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
 *.swp
 *.swo
 *~
