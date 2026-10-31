@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pls-graph-engine"
+version = "0.1.0"
+description = "Project-agnostic DAG workflow execution engine for Product Lab System"
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+pls = "graph_engine.cli.main:main"
+
+[tool.setuptools.packages.find]
+include = ["graph_engine*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/graph_engine"]
+addopts = "-q"
