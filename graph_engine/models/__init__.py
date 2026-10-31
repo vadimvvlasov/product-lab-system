@@ -10,6 +10,7 @@ from graph_engine.models.enums import (
     TaskStatus,
     VerificationMethod,
 )
+from graph_engine.models.run import ErrorRecord, RunState, TaskState
 from graph_engine.models.workflow import (
     ContextReference,
     ExecutionLimits,
@@ -42,4 +43,8 @@ __all__ = [
     "VerificationCriterion",
     "WorkflowDefinition",
     "WorkflowMetadata",
+    # Run models
+    "ErrorRecord",
+    "RunState",
+    "TaskState",
 ]
