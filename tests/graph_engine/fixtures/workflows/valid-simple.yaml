@@ -1,0 +1,44 @@
+version: "1"
+
+workflow:
+  id: simple-test
+  description: Simple valid workflow for testing
+
+execution:
+  max_concurrency: 2
+  max_retries: 1
+  max_run_duration_minutes: 60
+
+executors:
+  mock:
+    adapter: mock
+    config: {}
+
+executor_mapping:
+  research: mock
+
+tasks:
+  - id: task-a
+    type: research
+    verification:
+      - id: check-output
+        method: command
+        command: "test -f artifacts/output.txt"
+    outputs:
+      - name: result
+        path: artifacts/output.txt
+
+  - id: task-b
+    type: research
+    depends_on: [task-a]
+    inputs:
+      - name: input-data
+        from: task-a
+        artifact: result
+    verification:
+      - id: check-result
+        method: command
+        command: "echo pass"
+    outputs:
+      - name: final
+        path: artifacts/final.txt
