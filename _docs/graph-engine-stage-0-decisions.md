@@ -35,8 +35,10 @@
 - **Commit strategy:** Thematic commits per logical component (not one-per-file); group related modules
 - **Commit prefix:** `feat(graph):`
 - **Stages:** 1–8, checkpoint commits at meaningful boundaries within each stage
-- **No external actions:** no push, merge, deploy, tag, or issue operations without explicit owner approval
-- **QA:** after Stage 8, create independent QA handoff; owner reviews verdict before merge
+- **Execution:** Work through all stages 1-8 continuously (Option 3)
+- **Merge:** Agent merges by owner command after QA PASS (Variant B)
+- **No external actions:** no push, merge (without command), deploy, tag, or issue operations
+- **QA:** after Stage 8, create independent QA handoff; owner reviews verdict, then commands merge
 - **Preservation:** untracked files (`_docs/arxiv-review-2026-10-31.md`, `_docs/handoffs/`, `system/modules/arxiv-review-*`) remain untouched
 
 ## Stage 0 exit
