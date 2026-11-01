@@ -286,6 +286,7 @@ class RunController:
             self._block(task, task_state, f"artifact publication failed: {exc}")
             return
 
+        task_state.artifacts = artifact_records
         task_state.completed_at = _now()
         self._set_status(task.id, TaskStatus.COMPLETED)
         self._save_attempt(task, attempt, "completed", "task completed", [])

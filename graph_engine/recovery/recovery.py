@@ -138,20 +138,29 @@ class RecoveryManager:
                     / f"attempt-{task_state.current_attempt:03d}"
                 )
 
+            recorded = {
+                record.get("path"): record for record in task_state.artifacts
+            }
+            required_artifacts = []
+            for out in task.outputs:
+                spec = {
+                    "name": out.name,
+                    "path": out.path,
+                    "min_bytes": out.min_bytes,
+                }
+                record = recorded.get(out.path)
+                if record and record.get("sha256"):
+                    spec["sha256"] = record["sha256"]
+                required_artifacts.append(spec)
+
             reconciliation = reconcile_task_status(
                 task_id=task_id,
                 current_status=task_state.status,
                 artifacts_dir=self.run_dir,
-                required_artifacts=[
-                    {
-                        "name": out.name,
-                        "path": out.path,
-                        "min_bytes": out.min_bytes,
-                    }
-                    for out in task.outputs
-                ],
+                required_artifacts=required_artifacts,
                 side_effects=task.side_effects.value,
                 staging_dir=staging_dir,
+                require_checksum=task_state.status == TaskStatus.COMPLETED,
             )
 
             reconciliations.append(

@@ -1,5 +1,6 @@
 """Tests for recovery manager using real run state."""
 
+import hashlib
 import json
 
 import pytest
@@ -86,6 +87,14 @@ def make_run(
         target = layout.run_root / "artifacts" / "output1.txt"
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("output content")
+        task.artifacts = [
+            {
+                "name": "output1",
+                "path": "artifacts/output1.txt",
+                "size_bytes": target.stat().st_size,
+                "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+            }
+        ]
 
     save_run_state(state, layout)
     return RecoveryManager(layout.run_root), state, layout
@@ -263,3 +272,30 @@ def test_resume_workflow_hash_mismatch_fails(tmp_path):
         manager.resume_workflow()
 
     assert "snapshot validation failed" in str(exc_info.value).lower()
+
+
+def test_resume_workflow_tampered_artifact_reexecutes(tmp_path):
+    manager, _, layout = make_run(
+        tmp_path, task_status=TaskStatus.COMPLETED, artifact=True, attempt=1
+    )
+    (layout.run_root / "artifacts" / "output1.txt").write_text("tampered content")
+
+    info = manager.resume_workflow()
+
+    recon = info["recovery_plan"]["reconciliations"][0]
+    assert recon["new_status"] == TaskStatus.PENDING.value
+    assert "checksum mismatch" in recon["reason"].lower()
+
+
+def test_resume_workflow_without_recorded_checksum_reexecutes(tmp_path):
+    manager, state, layout = make_run(
+        tmp_path, task_status=TaskStatus.COMPLETED, artifact=True, attempt=1
+    )
+    state.tasks["task1"].artifacts = []
+    save_run_state(state, layout)
+
+    info = manager.resume_workflow()
+
+    recon = info["recovery_plan"]["reconciliations"][0]
+    assert recon["new_status"] == TaskStatus.PENDING.value
+    assert "no recorded checksum" in recon["reason"].lower()

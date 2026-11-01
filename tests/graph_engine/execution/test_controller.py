@@ -116,6 +116,7 @@ def test_controller_runs_workflow_end_to_end(tmp_path):
     assert (layout.run_root / "artifacts" / "a.txt").exists()
     assert (layout.run_root / "artifacts" / "b.txt").exists()
     assert len(executor.calls) == 2
+    assert result.tasks["task-a"].artifacts[0]["sha256"]
 
     # task-b received task-a's published artifact as declared input
     second = executor.calls[1]

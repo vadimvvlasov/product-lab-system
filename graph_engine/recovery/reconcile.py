@@ -33,6 +33,7 @@ def reconcile_task_status(
     required_artifacts: list[dict],
     side_effects: str = "none",
     staging_dir: Path | None = None,
+    require_checksum: bool = False,
 ) -> TaskReconciliation:
     """
     Reconcile task status after interruption.
@@ -44,6 +45,7 @@ def reconcile_task_status(
         required_artifacts: List of artifact specs with name/path/min_bytes/sha256
         side_effects: Side effects policy (none/idempotent/unsafe)
         staging_dir: Attempt staging directory for interrupted verification
+        require_checksum: Reject artifacts without a matching recorded checksum
 
     Returns:
         Reconciliation decision
@@ -61,7 +63,9 @@ def reconcile_task_status(
     # Completed tasks: validate artifacts before reuse
     if current_status == TaskStatus.COMPLETED:
         missing, invalid = _check_artifacts(
-            artifacts_dir, required_artifacts, require_checksum=False
+            artifacts_dir,
+            required_artifacts,
+            require_checksum=require_checksum,
         )
         problems = missing + invalid
         if problems:
@@ -217,9 +221,10 @@ def _check_artifacts(
             continue
 
         expected = spec.get("sha256")
-        if require_checksum and expected:
-            actual = _sha256(artifact_path)
-            if actual != expected:
+        if require_checksum:
+            if not expected:
+                invalid.append(f"{name} (no recorded checksum)")
+            elif _sha256(artifact_path) != expected:
                 invalid.append(f"{name} (checksum mismatch)")
 
     return missing, invalid
