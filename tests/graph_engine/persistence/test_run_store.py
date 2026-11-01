@@ -81,3 +81,33 @@ tasks:
     loaded = load_run_state(layout)
     assert loaded.run_id == run_state.run_id
     assert loaded.tasks["task-1"].status == TaskStatus.COMPLETED
+
+
+def test_create_run_rejects_invalid_workflow(temp_dir):
+    """A run must not be created for a workflow that fails validation."""
+    import pytest
+
+    from graph_engine.errors import ValidationError
+
+    workflow_yaml = b"""
+version: "1"
+workflow:
+  id: test
+  description: Test
+execution:
+  max_concurrency: 1
+  max_retries: 0
+tasks:
+  - id: "bad id with spaces"
+    type: test
+    depends_on: [missing]
+    verification:
+      - id: check
+        method: command
+        command: "true"
+"""
+
+    workflow = parse_workflow(workflow_yaml)
+
+    with pytest.raises(ValidationError):
+        create_run(workflow, workflow_yaml, temp_dir)

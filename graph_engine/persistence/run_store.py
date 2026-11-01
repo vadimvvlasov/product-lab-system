@@ -4,12 +4,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from graph_engine import __version__
+from graph_engine.errors import ValidationError
 from graph_engine.models.enums import RunStatus, TaskStatus
 from graph_engine.models.run import RunState, TaskState
 from graph_engine.models.workflow import WorkflowDefinition
 from graph_engine.persistence.atomic import atomic_read_json, atomic_write_json
 from graph_engine.persistence.layout import RunLayout, generate_run_id
 from graph_engine.persistence.snapshot import snapshot_executor_config, snapshot_workflow
+from graph_engine.validation import validate_workflow
 
 
 def create_run(
@@ -29,7 +31,16 @@ def create_run(
         
     Returns:
         (RunState, RunLayout) tuple
+
+    Raises:
+        ValidationError: if the workflow is invalid
     """
+    report = validate_workflow(workflow)
+    if not report.is_valid:
+        raise ValidationError(
+            "Workflow validation failed: " + "; ".join(report.errors)
+        )
+
     if run_id is None:
         run_id = generate_run_id(workflow.workflow.id)
     

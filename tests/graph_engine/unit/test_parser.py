@@ -152,3 +152,70 @@ tasks:
     
     with pytest.raises(WorkflowParseError, match="non-empty list"):
         parse_workflow(yaml_content)
+
+
+def test_unknown_task_key_is_rejected():
+    """A typo must not be silently ignored."""
+    yaml_content = b"""
+version: "1"
+workflow:
+  id: test-wf
+  description: Test
+execution:
+  max_concurrency: 1
+  max_retries: 0
+tasks:
+  - id: task-1
+    type: test
+    depend_on: [task-0]
+    verification:
+      - id: check
+        method: command
+        command: "true"
+"""
+
+    with pytest.raises(WorkflowParseError, match="unknown keys"):
+        parse_workflow(yaml_content)
+
+
+def test_unknown_top_level_key_is_rejected():
+    yaml_content = b"""
+version: "1"
+workflow:
+  id: test-wf
+  description: Test
+execution:
+  max_concurrency: 1
+  max_retries: 0
+tasks: []
+extra_section: {}
+"""
+
+    with pytest.raises(WorkflowParseError, match="unknown keys"):
+        parse_workflow(yaml_content)
+
+
+def test_zero_min_bytes_is_preserved():
+    yaml_content = b"""
+version: "1"
+workflow:
+  id: test-wf
+  description: Test
+execution:
+  max_concurrency: 1
+  max_retries: 0
+tasks:
+  - id: task-1
+    type: test
+    verification:
+      - id: check
+        method: command
+        command: "true"
+    outputs:
+      - name: empty
+        path: artifacts/empty.txt
+        min_bytes: 0
+"""
+
+    workflow = parse_workflow(yaml_content)
+    assert workflow.tasks[0].outputs[0].min_bytes == 0
