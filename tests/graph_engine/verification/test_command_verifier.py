@@ -112,29 +112,19 @@ def test_command_captures_stdout_stderr(temp_staging):
     assert "error" in result.stderr
 
 
-def test_command_shell_metacharacters_rejected(temp_staging):
-    """Test that shell metacharacters are rejected in MVP."""
+def test_command_quoted_metacharacters_are_literal(temp_staging):
+    """Quoted metacharacters reach the program instead of being rejected."""
     verifier = CommandVerifier()
+    criterion = VerificationCriterion(
+        id="quoted",
+        method=VerificationMethod.COMMAND,
+        command="printf 'a;b|c'",
+    )
 
-    dangerous_commands = [
-        "ls | grep test",
-        "echo test > output.txt",
-        "cmd1 && cmd2",
-        "cmd1 || cmd2",
-        "cmd1; cmd2",
-    ]
+    result = verifier.verify(criterion, temp_staging, {})
 
-    for cmd in dangerous_commands:
-        criterion = VerificationCriterion(
-            id="dangerous",
-            method=VerificationMethod.COMMAND,
-            command=cmd,
-        )
-
-        result = verifier.verify(criterion, temp_staging, {})
-
-        assert result.status == VerificationStatus.ERROR
-        assert "metacharacters not allowed" in result.message
+    assert result.status == VerificationStatus.PASS
+    assert result.stdout == "a;b|c"
 
 
 def test_command_missing_command_field(temp_staging):

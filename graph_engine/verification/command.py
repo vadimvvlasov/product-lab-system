@@ -33,8 +33,10 @@ class CommandVerifier:
         """
         Run command verification.
 
-        Command is parsed with shlex and executed without shell.
-        Working directory is staging_dir.
+        Command is parsed with shlex and executed without a shell, so shell
+        metacharacters are passed literally to the program. Workflow commands
+        are trusted input: shell=False prevents shell interpretation, not
+        arbitrary program execution, and is not a sandbox.
         """
         if not criterion.command:
             return VerificationResult(
@@ -61,18 +63,6 @@ class CommandVerifier:
                 status=VerificationStatus.ERROR,
                 message="Command is empty after parsing",
                 error_details="Empty argv",
-            )
-
-        # Reject shell metacharacters in MVP (explicit safety)
-        # Note: $, (, ) are allowed as they can appear in quoted python code
-        # The key danger is pipes, redirects, and command chaining
-        dangerous_chars = ["|", "&&", "||", ";", ">", "<", "`"]
-        if any(char in criterion.command for char in dangerous_chars):
-            return VerificationResult(
-                criterion_id=criterion.id,
-                status=VerificationStatus.ERROR,
-                message="Shell metacharacters not allowed in MVP (use explicit shell script file)",
-                error_details=f"Found dangerous characters in: {criterion.command}",
             )
 
         # Run command
