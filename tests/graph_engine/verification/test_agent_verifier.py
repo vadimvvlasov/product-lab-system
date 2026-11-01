@@ -26,7 +26,7 @@ class SimpleRegistry:
     def __init__(self):
         self._executors = {}
 
-    def get(self, name: str):
+    def get_executor(self, name: str):
         if name not in self._executors:
             raise KeyError(f"Executor {name} not found")
         return self._executors[name]
@@ -186,7 +186,7 @@ def test_agent_verification_fresh_context(mock_registry, temp_staging):
     result = verifier.verify(criterion, temp_staging, task_context)
 
     # Check that executor was called
-    executor = mock_registry.get("passing_reviewer")
+    executor = mock_registry.get_executor("passing_reviewer")
     assert executor.call_count == 1
 
     # Verify context was fresh (attempt_number=1, no retry_feedback)
@@ -220,7 +220,7 @@ def test_agent_verifier_does_not_see_implementer_transcript(
     result = verifier.verify(criterion, temp_staging, task_context)
 
     # Verification uses fresh context
-    executor = mock_registry.get("passing_reviewer")
+    executor = mock_registry.get_executor("passing_reviewer")
     context = executor.last_context
 
     # Context should NOT have implementer transcript

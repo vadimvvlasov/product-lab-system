@@ -48,15 +48,24 @@ class AgentVerifier:
                 error_details="Configuration error",
             )
 
-        # Resolve executor
+        # Resolve executor through the production registry interface.
+        # ExecutorRegistry exposes get_executor(); tests must use the same
+        # interface so that an integration mismatch cannot hide behind a stub.
         try:
-            executor = self.executor_registry.get(criterion.executor)
+            executor = self.executor_registry.get_executor(criterion.executor)
         except KeyError:
             return VerificationResult(
                 criterion_id=criterion.id,
                 status=VerificationStatus.ERROR,
                 message=f"Verifier executor not found: {criterion.executor}",
                 error_details=f"Unknown executor: {criterion.executor}",
+            )
+        except Exception as e:  # noqa: BLE001 - registry errors must not crash verification
+            return VerificationResult(
+                criterion_id=criterion.id,
+                status=VerificationStatus.ERROR,
+                message=f"Cannot resolve verifier executor: {type(e).__name__}: {e}",
+                error_details=str(e),
             )
 
         # Build fresh verification context
