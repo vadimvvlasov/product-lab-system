@@ -5,6 +5,8 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from graph_engine.ids import require_safe_id
+
 
 def generate_run_id(workflow_id: str) -> str:
     """
@@ -140,22 +142,26 @@ class RunLayout:
     # Task-specific
     def task_state(self, task_id: str) -> Path:
         """Task state projection."""
+        require_safe_id(task_id, "task id")
         return self.tasks_dir / task_id / "task.json"
-    
+
     def task_attempts_dir(self, task_id: str) -> Path:
         """Task attempts directory."""
+        require_safe_id(task_id, "task id")
         return self.tasks_dir / task_id / "attempts"
-    
+
     def task_attempt_file(self, task_id: str, attempt: int) -> Path:
         """Attempt record JSON."""
         return self.task_attempts_dir(task_id) / f"{attempt:03d}.json"
-    
+
     def task_staging_dir(self, task_id: str, attempt: int) -> Path:
         """Attempt staging directory (executor working dir)."""
+        require_safe_id(task_id, "task id")
         return self.artifacts_staging_dir / task_id / f"attempt-{attempt:03d}"
-    
+
     def task_approval(self, task_id: str) -> Path:
         """Approval decision record."""
+        require_safe_id(task_id, "task id")
         return self.approvals_dir / f"{task_id}.json"
     
     def create_structure(self):

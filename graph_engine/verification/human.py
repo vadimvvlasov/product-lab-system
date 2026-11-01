@@ -49,7 +49,8 @@ class HumanVerifier:
             )
         
         # Decision exists
-        if decision["approved"]:
+        approved = decision.get("approved")
+        if approved is True:
             return VerificationResult(
                 criterion_id=criterion.id,
                 status=VerificationStatus.PASS,
@@ -57,7 +58,7 @@ class HumanVerifier:
                 approver=decision.get("approver"),
                 approval_comment=decision.get("comment"),
             )
-        else:
+        if approved is False:
             return VerificationResult(
                 criterion_id=criterion.id,
                 status=VerificationStatus.FAIL,
@@ -65,3 +66,9 @@ class HumanVerifier:
                 approver=decision.get("approver"),
                 approval_comment=decision.get("comment"),
             )
+        return VerificationResult(
+            criterion_id=criterion.id,
+            status=VerificationStatus.ERROR,
+            message="Invalid approval record: 'approved' must be a boolean",
+            error_details=f"Got {type(approved).__name__}: {approved!r}",
+        )
