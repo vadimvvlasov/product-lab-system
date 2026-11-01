@@ -7,8 +7,7 @@ adapters are out of scope. Independent QA is pending.
 **Branch:** `issue/17-graph-engine-integrity`  
 **Base:** `feat/graph-engine-stages-5-8` (not `main`; the Stage 5-6 code under
 repair is not on `main`)  
-**Code under test:** `9842f7e` (QA reviews the branch tip and records the SHA
-in issue #17)  
+**Code under test:** branch tip (QA records the reviewed SHA in issue #17)  
 **Version:** 0.1.0
 
 This is the only current status document. It replaces the earlier
@@ -57,7 +56,7 @@ Command:
 python3 -m pytest tests/graph_engine
 ```
 
-Result at `9842f7e`: **142 passed** (0 failed, 0 skipped).
+Result at the branch tip: **144 passed** (0 failed, 0 skipped).
 
 | Area | Tests |
 |---|---:|
@@ -68,10 +67,10 @@ Result at `9842f7e`: **142 passed** (0 failed, 0 skipped).
 | `execution/` (controller E2E) | 11 |
 | `scheduler/` | 4 |
 | `verification/` | 25 |
-| `recovery/` | 29 |
+| `recovery/` | 31 |
 | `cli/` | 5 |
 | `test_api.py` | 4 |
-| **Total** | **142** |
+| **Total** | **144** |
 
 The end-to-end tests use real `RunStore`, `RunLayout`, `ExecutorRegistry`, and
 the run controller. They cover run → verify → retry → complete, approval
@@ -133,7 +132,7 @@ documented limit; DEFERRED = not implemented.
 | E2 | Undeclared outputs are not passed | PASS | Context builder |
 | E3 | Required artifacts validated | PASS | Artifact manager tests |
 | E4 | Publish only after verification | PASS | Controller E2E |
-| E5 | Checksums and provenance | PASS | `ArtifactRecord` |
+| E5 | Checksums and provenance | PASS | `ArtifactRecord`; checksums persisted in `TaskState` |
 
 ### F. Persistence and recovery
 
@@ -143,7 +142,7 @@ documented limit; DEFERRED = not implemented.
 | F2 | Workflow templates stored in YAML | PASS | Snapshot |
 | F3 | Atomic writes | PASS | fsync + `os.replace` |
 | F4 | Immutable workflow snapshot | PASS | Hash verification |
-| F5 | Completed verified tasks reused | PASS | Recovery tests |
+| F5 | Completed verified tasks reused | PASS | Recovery tests; size and checksum checked |
 | F6 | Incomplete attempts never reused | PASS | Recovery tests |
 | F7 | Unsafe side effects not repeated | PASS | Recovery blocks unsafe tasks |
 
@@ -184,7 +183,7 @@ documented limit; DEFERRED = not implemented.
 | J1 | `validate`, `run`, `status`, `resume`, `cancel` work | PASS | CLI tests; `approve` and `reject` also work |
 | J2 | Unit tests pass | PASS | 25 unit tests |
 | J3 | Scheduler tests pass | PASS | 4 tests |
-| J4 | Recovery tests pass | PASS | 29 tests |
+| J4 | Recovery tests pass | PASS | 31 tests |
 | J5 | End-to-end test passes | PASS | Controller, API, and CLI E2E |
 | J6 | Documentation explains format and operations | PASS | This document |
 
