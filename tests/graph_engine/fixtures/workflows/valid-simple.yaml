@@ -12,7 +12,8 @@ execution:
 executors:
   mock:
     adapter: mock
-    config: {}
+    config:
+      artifacts: [result, final]
 
 executor_mapping:
   research: mock
