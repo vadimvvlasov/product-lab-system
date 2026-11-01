@@ -1,34 +1,29 @@
-"""Tests for recovery manager."""
+"""Tests for recovery manager using real run state."""
 
-import hashlib
 import json
 
 import pytest
 
 from graph_engine.errors import RecoveryError
 from graph_engine.models.enums import RunStatus, TaskStatus
+from graph_engine.models.run import RunState
+from graph_engine.parser import parse_workflow
+from graph_engine.persistence.run_store import create_run, save_run_state
 from graph_engine.recovery.recovery import RecoveryManager
 
-
-@pytest.fixture
-def run_dir(tmp_path):
-    """Create run directory with basic structure."""
-    run_dir = tmp_path / "run-123"
-    run_dir.mkdir()
-    (run_dir / "artifacts").mkdir()
-    return run_dir
-
-
-@pytest.fixture
-def workflow_yaml(run_dir):
-    """Create workflow snapshot."""
-    content = """version: "1"
+WORKFLOW = """version: "1"
 workflow:
   id: test-workflow
   description: Test
 execution:
   max_concurrency: 1
   max_retries: 1
+executors:
+  mock:
+    adapter: mock
+    config: {}
+executor_mapping:
+  test: mock
 tasks:
   - id: task1
     type: test
@@ -40,230 +35,169 @@ tasks:
         method: command
         command: "test -f artifacts/output1.txt"
 """
-    workflow_path = run_dir / "workflow.yaml"
-    workflow_path.write_text(content)
 
-    # Compute hash
-    workflow_hash = hashlib.sha256(content.encode()).hexdigest()
-
-    return workflow_path, workflow_hash
-
-
-def test_can_resume_running(run_dir, workflow_yaml):
-    """Test can resume running workflow."""
-    _, workflow_hash = workflow_yaml
-
-    run_json = {
-        "run_id": "run-123",
-        "status": RunStatus.RUNNING.value,
-        "workflow_hash": workflow_hash,
-        "tasks": {
-            "task1": TaskStatus.PENDING.value,
-        },
-    }
-
-    (run_dir / "run.json").write_text(json.dumps(run_json))
-
-    manager = RecoveryManager(run_dir)
-    can_resume, reason = manager.can_resume()
-
-    assert can_resume is True
-    assert reason is None
-
-
-def test_cannot_resume_completed(run_dir, workflow_yaml):
-    """Test cannot resume completed workflow."""
-    _, workflow_hash = workflow_yaml
-
-    run_json = {
-        "run_id": "run-123",
-        "status": RunStatus.COMPLETED.value,
-        "workflow_hash": workflow_hash,
-        "tasks": {},
-    }
-
-    (run_dir / "run.json").write_text(json.dumps(run_json))
-
-    manager = RecoveryManager(run_dir)
-    can_resume, reason = manager.can_resume()
-
-    assert can_resume is False
-    assert "already completed" in reason.lower()
-
-
-def test_can_resume_awaiting_approval(run_dir, workflow_yaml):
-    """Test can resume workflow awaiting approval."""
-    _, workflow_hash = workflow_yaml
-
-    run_json = {
-        "run_id": "run-123",
-        "status": RunStatus.AWAITING_APPROVAL.value,
-        "workflow_hash": workflow_hash,
-        "tasks": {
-            "task1": TaskStatus.VERIFYING.value,
-        },
-    }
-
-    (run_dir / "run.json").write_text(json.dumps(run_json))
-
-    manager = RecoveryManager(run_dir)
-    can_resume, reason = manager.can_resume()
-
-    assert can_resume is True
-
-
-def test_can_resume_cancelled(run_dir, workflow_yaml):
-    """Test can resume cancelled workflow."""
-    _, workflow_hash = workflow_yaml
-
-    run_json = {
-        "run_id": "run-123",
-        "status": RunStatus.CANCELLED.value,
-        "workflow_hash": workflow_hash,
-        "tasks": {
-            "task1": TaskStatus.BLOCKED.value,
-        },
-    }
-
-    (run_dir / "run.json").write_text(json.dumps(run_json))
-
-    manager = RecoveryManager(run_dir)
-    can_resume, reason = manager.can_resume()
-
-    assert can_resume is True
-
-
-def test_validate_snapshot_hash_match(run_dir, workflow_yaml):
-    """Test snapshot validation with matching hash."""
-    _, workflow_hash = workflow_yaml
-
-    manager = RecoveryManager(run_dir)
-    valid, reason = manager.validate_snapshot(expected_hash=workflow_hash)
-
-    assert valid is True
-    assert reason is None
-
-
-def test_validate_snapshot_hash_mismatch(run_dir, workflow_yaml):
-    """Test snapshot validation with mismatched hash."""
-    _, workflow_hash = workflow_yaml
-
-    # Change workflow content
-    (run_dir / "workflow.yaml").write_text("changed content")
-
-    manager = RecoveryManager(run_dir)
-    valid, reason = manager.validate_snapshot(expected_hash=workflow_hash)
-
-    assert valid is False
-    assert "mismatch" in reason.lower()
-
-
-def test_validate_snapshot_missing(run_dir):
-    """Test snapshot validation when file is missing."""
-    # Don't create workflow.yaml
-
-    manager = RecoveryManager(run_dir)
-    valid, reason = manager.validate_snapshot()
-
-    assert valid is False
-    assert "not found" in reason.lower()
-
-
-def test_resume_workflow_with_completed_task(run_dir, workflow_yaml):
-    """Test resume with completed task that has valid artifacts."""
-    _, workflow_hash = workflow_yaml
-
-    # Create artifact
-    output_file = run_dir / "artifacts" / "output1.txt"
-    output_file.write_text("output content")
-
-    run_json = {
-        "run_id": "run-123",
-        "status": RunStatus.RUNNING.value,
-        "workflow_hash": workflow_hash,
-        "tasks": {
-            "task1": TaskStatus.COMPLETED.value,
-        },
-    }
-
-    (run_dir / "run.json").write_text(json.dumps(run_json))
-
-    manager = RecoveryManager(run_dir)
-    recovery_info = manager.resume_workflow()
-
-    # Should reuse completed task
-    plan = recovery_info["recovery_plan"]
-    assert plan["can_proceed"] is True
-
-    task1_recon = [r for r in plan["reconciliations"] if r["task_id"] == "task1"][0]
-    assert task1_recon["new_status"] == TaskStatus.COMPLETED.value
-    assert task1_recon["reuse"] is True
-
-
-def test_resume_workflow_with_missing_artifacts(run_dir, workflow_yaml):
-    """Test resume with completed task missing artifacts."""
-    _, workflow_hash = workflow_yaml
-
-    # Don't create artifact
-
-    run_json = {
-        "run_id": "run-123",
-        "status": RunStatus.RUNNING.value,
-        "workflow_hash": workflow_hash,
-        "tasks": {
-            "task1": TaskStatus.COMPLETED.value,
-        },
-    }
-
-    (run_dir / "run.json").write_text(json.dumps(run_json))
-
-    manager = RecoveryManager(run_dir)
-    recovery_info = manager.resume_workflow()
-
-    # Should reset to pending
-    plan = recovery_info["recovery_plan"]
-    assert plan["can_proceed"] is True
-
-    task1_recon = [r for r in plan["reconciliations"] if r["task_id"] == "task1"][0]
-    assert task1_recon["new_status"] == TaskStatus.PENDING.value
-
-
-def test_resume_workflow_unsafe_task_blocks(run_dir):
-    """Test resume fails with unsafe interrupted task."""
-    # Workflow with unsafe side effects
-    workflow_content = """version: "1"
+UNSAFE_WORKFLOW = """version: "1"
 workflow:
-  id: test-workflow
+  id: unsafe-workflow
   description: Unsafe workflow
 execution:
   max_concurrency: 1
   max_retries: 1
+executors:
+  mock:
+    adapter: mock
+    config: {}
+executor_mapping:
+  deploy: mock
 tasks:
   - id: deploy
     type: deploy
     side_effects: unsafe
+    idempotency_key: deploy-key
     outputs: []
     verification:
       - id: test
         method: command
         command: "true"
 """
-    workflow_path = run_dir / "workflow.yaml"
-    workflow_path.write_text(workflow_content)
-    workflow_hash = hashlib.sha256(workflow_content.encode()).hexdigest()
 
-    run_json = {
-        "run_id": "run-123",
-        "status": RunStatus.RUNNING.value,
-        "workflow_hash": workflow_hash,
-        "tasks": {
-            "deploy": TaskStatus.RUNNING.value,  # Interrupted during running
-        },
-    }
+RUN_ID = "test-workflow-20261031T210000Z-abcdef"
 
-    (run_dir / "run.json").write_text(json.dumps(run_json))
 
-    manager = RecoveryManager(run_dir)
+def make_run(
+    tmp_path,
+    workflow_yaml=WORKFLOW,
+    status=RunStatus.RUNNING,
+    task_status=TaskStatus.PENDING,
+    artifact=False,
+    attempt=0,
+    run_id=RUN_ID,
+):
+    workflow = parse_workflow(workflow_yaml.encode())
+    state, layout = create_run(
+        workflow, workflow_yaml.encode(), tmp_path / "runs", run_id=run_id
+    )
+    state.status = status
+    task = next(iter(state.tasks.values()))
+    task.status = task_status
+    task.current_attempt = attempt
+
+    if artifact:
+        target = layout.run_root / "artifacts" / "output1.txt"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("output content")
+
+    save_run_state(state, layout)
+    return RecoveryManager(layout.run_root), state, layout
+
+
+def test_can_resume_running(tmp_path):
+    manager, _, _ = make_run(tmp_path)
+    can_resume, reason = manager.can_resume()
+
+    assert can_resume is True
+    assert reason is None
+
+
+def test_cannot_resume_completed(tmp_path):
+    manager, _, _ = make_run(tmp_path, status=RunStatus.COMPLETED)
+    can_resume, reason = manager.can_resume()
+
+    assert can_resume is False
+    assert "cannot resume from status" in reason.lower()
+
+
+def test_can_resume_awaiting_approval(tmp_path):
+    manager, _, _ = make_run(tmp_path, status=RunStatus.AWAITING_APPROVAL)
+    can_resume, _ = manager.can_resume()
+
+    assert can_resume is True
+
+
+def test_can_resume_cancelled(tmp_path):
+    manager, _, _ = make_run(tmp_path, status=RunStatus.CANCELLED)
+    can_resume, _ = manager.can_resume()
+
+    assert can_resume is True
+
+
+def test_validate_snapshot_hash_match(tmp_path):
+    _, state, layout = make_run(tmp_path)
+    manager = RecoveryManager(layout.run_root)
+
+    valid, reason = manager.validate_snapshot(expected_hash=state.workflow_snapshot_hash)
+
+    assert valid is True
+    assert reason is None
+
+
+def test_validate_snapshot_hash_mismatch(tmp_path):
+    _, state, layout = make_run(tmp_path)
+    manager = RecoveryManager(layout.run_root)
+    (layout.run_root / "workflow.yaml").write_text("changed content")
+
+    valid, reason = manager.validate_snapshot(expected_hash=state.workflow_snapshot_hash)
+
+    assert valid is False
+    assert "mismatch" in reason.lower()
+
+
+def test_validate_snapshot_missing(tmp_path):
+    _, _, layout = make_run(tmp_path)
+    (layout.run_root / "workflow.yaml").unlink()
+
+    valid, reason = RecoveryManager(layout.run_root).validate_snapshot()
+
+    assert valid is False
+    assert "not found" in reason.lower()
+
+
+def test_resume_workflow_with_completed_task(tmp_path):
+    manager, _, _ = make_run(
+        tmp_path, task_status=TaskStatus.COMPLETED, artifact=True, attempt=1
+    )
+
+    info = manager.resume_workflow()
+
+    assert info["recovery_plan"]["can_proceed"] is True
+    recon = info["recovery_plan"]["reconciliations"][0]
+    assert recon["new_status"] == TaskStatus.COMPLETED.value
+    assert recon["reuse"] is True
+    assert isinstance(info["updated_state"], RunState)
+
+
+def test_resume_workflow_with_missing_artifacts(tmp_path):
+    manager, _, _ = make_run(
+        tmp_path, task_status=TaskStatus.COMPLETED, artifact=False, attempt=1
+    )
+
+    info = manager.resume_workflow()
+
+    recon = info["recovery_plan"]["reconciliations"][0]
+    assert recon["new_status"] == TaskStatus.PENDING.value
+    assert recon["reuse"] is False
+
+
+def test_resume_workflow_with_zero_byte_artifact_reexecutes(tmp_path):
+    manager, _, layout = make_run(
+        tmp_path, task_status=TaskStatus.COMPLETED, attempt=1
+    )
+    target = layout.run_root / "artifacts" / "output1.txt"
+    target.write_text("")
+
+    info = manager.resume_workflow()
+
+    recon = info["recovery_plan"]["reconciliations"][0]
+    assert recon["new_status"] == TaskStatus.PENDING.value
+
+
+def test_resume_workflow_unsafe_task_blocks(tmp_path):
+    manager, _, _ = make_run(
+        tmp_path,
+        workflow_yaml=UNSAFE_WORKFLOW,
+        task_status=TaskStatus.RUNNING,
+        run_id="unsafe-workflow-20261031T210000Z-abcdef",
+    )
 
     with pytest.raises(RecoveryError) as exc_info:
         manager.resume_workflow()
@@ -271,64 +205,60 @@ tasks:
     assert "unsafe recovery" in str(exc_info.value).lower()
 
 
-def test_resume_workflow_cancelled_becomes_running(run_dir, workflow_yaml):
-    """Test cancelled run becomes running after resume."""
-    _, workflow_hash = workflow_yaml
+def test_resume_workflow_cancelled_becomes_running(tmp_path):
+    manager, _, _ = make_run(tmp_path, status=RunStatus.CANCELLED)
 
-    run_json = {
-        "run_id": "run-123",
-        "status": RunStatus.CANCELLED.value,
-        "workflow_hash": workflow_hash,
-        "tasks": {
-            "task1": TaskStatus.PENDING.value,
-        },
-    }
+    info = manager.resume_workflow()
 
-    (run_dir / "run.json").write_text(json.dumps(run_json))
-
-    manager = RecoveryManager(run_dir)
-    recovery_info = manager.resume_workflow()
-
-    updated_state = recovery_info["updated_state"]
-    assert updated_state["status"] == RunStatus.RUNNING.value
+    assert info["updated_state"].status == RunStatus.RUNNING
 
 
-def test_cannot_resume_missing_run_json(run_dir):
-    """Test cannot resume without run.json."""
-    manager = RecoveryManager(run_dir)
+def test_resume_workflow_verifying_resumes_publish(tmp_path):
+    manager, _, layout = make_run(
+        tmp_path, task_status=TaskStatus.VERIFYING, attempt=1
+    )
+    staging = layout.run_root / "artifacts" / ".staging" / "task1" / "attempt-001"
+    (staging / "artifacts").mkdir(parents=True)
+    (staging / "artifacts" / "output1.txt").write_text("staged content")
+
+    info = manager.resume_workflow()
+
+    recon = info["recovery_plan"]["reconciliations"][0]
+    assert recon["new_status"] == TaskStatus.VERIFYING.value
+    assert recon["resume_phase"] == "publish"
+
+
+def test_applied_state_roundtrips(tmp_path):
+    manager, _, _ = make_run(tmp_path, status=RunStatus.CANCELLED)
+
+    info = manager.resume_workflow()
+    reloaded = RunState.from_dict(info["updated_state"].to_dict())
+
+    assert reloaded.status == RunStatus.RUNNING
+    assert reloaded.tasks["task1"].status == TaskStatus.PENDING
+
+
+def test_cannot_resume_missing_run_json(tmp_path):
+    manager = RecoveryManager(tmp_path)
     can_resume, reason = manager.can_resume()
 
     assert can_resume is False
     assert "not found" in reason.lower()
 
 
-def test_cannot_resume_corrupted_run_json(run_dir):
-    """Test cannot resume with corrupted run.json."""
-    (run_dir / "run.json").write_text("invalid json {")
+def test_cannot_resume_corrupted_run_json(tmp_path):
+    (tmp_path / "run.json").write_text("invalid json {")
+    (tmp_path / "workflow.yaml").write_text(WORKFLOW)
 
-    manager = RecoveryManager(run_dir)
-    can_resume, reason = manager.can_resume()
+    can_resume, reason = RecoveryManager(tmp_path).can_resume()
 
     assert can_resume is False
     assert "cannot read" in reason.lower()
 
 
-def test_resume_workflow_hash_mismatch_fails(run_dir, workflow_yaml):
-    """Test resume fails when workflow hash mismatches."""
-    _, original_hash = workflow_yaml
-
-    # Use different hash in run.json
-    run_json = {
-        "run_id": "run-123",
-        "status": RunStatus.RUNNING.value,
-        "workflow_hash": "different_hash_123",
-        "tasks": {},
-    }
-
-    (run_dir / "run.json").write_text(json.dumps(run_json))
-
-    manager = RecoveryManager(run_dir)
-
+def test_resume_workflow_hash_mismatch_fails(tmp_path):
+    manager, _, layout = make_run(tmp_path)
+    (layout.run_root / "workflow.yaml").write_text(WORKFLOW + "\n# tampered\n")
     with pytest.raises(RecoveryError) as exc_info:
         manager.resume_workflow()
 

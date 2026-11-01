@@ -1,12 +1,13 @@
 """Recovery manager for resuming workflows."""
 
-import hashlib
 import json
 from pathlib import Path
 
 from graph_engine.errors import RecoveryError
 from graph_engine.models.enums import RunStatus, TaskStatus
+from graph_engine.models.run import RunState, TaskState
 from graph_engine.parser import parse_workflow_file
+from graph_engine.persistence.snapshot import verify_snapshot_hash
 from graph_engine.recovery.reconcile import reconcile_task_status
 
 
@@ -29,29 +30,21 @@ class RecoveryManager:
         Returns:
             (can_resume, reason) tuple
         """
-        # Check run.json exists
         run_json = self.run_dir / "run.json"
         if not run_json.exists():
             return (False, "run.json not found")
 
-        # Load run state
         try:
             with open(run_json) as f:
                 run_state = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
             return (False, f"Cannot read run.json: {e}")
 
-        # Check workflow snapshot
         workflow_snapshot = self.run_dir / "workflow.yaml"
         if not workflow_snapshot.exists():
             return (False, "workflow.yaml snapshot not found")
 
-        # Check status
         status = run_state.get("status")
-        if status == RunStatus.COMPLETED.value:
-            return (False, "Run already completed")
-
-        # Resumable statuses
         resumable = {
             RunStatus.RUNNING.value,
             RunStatus.AWAITING_APPROVAL.value,
@@ -68,6 +61,7 @@ class RecoveryManager:
         self,
         expected_hash: str | None = None,
         allow_config_change: bool = False,
+        expected_config_hash: str | None = None,
     ) -> tuple[bool, str | None]:
         """
         Validate workflow snapshot immutability.
@@ -75,6 +69,7 @@ class RecoveryManager:
         Args:
             expected_hash: Expected workflow hash (from run.json)
             allow_config_change: Allow executor config changes
+            expected_config_hash: Expected executor config hash (from run.json)
 
         Returns:
             (valid, reason) tuple
@@ -84,76 +79,79 @@ class RecoveryManager:
         if not workflow_snapshot.exists():
             return (False, "Workflow snapshot not found")
 
-        if expected_hash:
-            # Compute current hash
-            content = workflow_snapshot.read_bytes()
-            current_hash = hashlib.sha256(content).hexdigest()
+        if expected_hash and not verify_snapshot_hash(workflow_snapshot, expected_hash):
+            return (False, "Workflow hash mismatch: snapshot was modified")
 
-            if current_hash != expected_hash:
-                return (
-                    False,
-                    f"Workflow hash mismatch: expected {expected_hash[:8]}..., got {current_hash[:8]}...",
-                )
-
-        # TODO: Validate executor config hash if needed
-        # For now, we trust the snapshot
+        if not allow_config_change and expected_config_hash:
+            config_snapshot = self.run_dir / "executor_config.json"
+            if not config_snapshot.exists():
+                return (False, "Executor config snapshot not found")
+            if not verify_snapshot_hash(config_snapshot, expected_config_hash):
+                return (False, "Executor config hash mismatch: snapshot was modified")
 
         return (True, None)
 
     def create_recovery_plan(
         self,
         workflow,
-        run_state: dict,
+        run_state: RunState,
     ) -> dict:
         """
         Create recovery plan for tasks.
 
         Args:
             workflow: Parsed workflow definition
-            run_state: Current run state from run.json
+            run_state: Current run state
 
         Returns:
             Recovery plan dict with task reconciliations
         """
-        task_states = run_state.get("tasks", {})
         artifacts_dir = self.run_dir / "artifacts"
+        task_map = {task.id: task for task in workflow.tasks}
 
         reconciliations = []
         unsafe_tasks = []
 
-        # Build task map for artifact specs
-        task_map = {task.id: task for task in workflow.tasks}
-
-        for task_id, status_str in task_states.items():
+        for task_id, task_state in run_state.tasks.items():
             if task_id not in task_map:
-                # Task no longer in workflow?
                 reconciliations.append(
                     {
                         "task_id": task_id,
-                        "old_status": status_str,
+                        "old_status": task_state.status.value,
                         "new_status": TaskStatus.BLOCKED.value,
                         "reason": "Task not found in workflow",
                         "safe": False,
+                        "reuse": False,
+                        "resume_phase": None,
                     }
                 )
                 unsafe_tasks.append(task_id)
                 continue
 
             task = task_map[task_id]
-            current_status = TaskStatus(status_str)
+            staging_dir = None
+            if task_state.current_attempt > 0:
+                staging_dir = (
+                    artifacts_dir
+                    / ".staging"
+                    / task_id
+                    / f"attempt-{task_state.current_attempt:03d}"
+                )
 
-            # Get task side effects policy
-            side_effects = getattr(task, "side_effects", "none")
-
-            # Reconcile
             reconciliation = reconcile_task_status(
                 task_id=task_id,
-                current_status=current_status,
+                current_status=task_state.status,
                 artifacts_dir=self.run_dir,
                 required_artifacts=[
-                    {"name": out.name, "path": out.path} for out in task.outputs
+                    {
+                        "name": out.name,
+                        "path": out.path,
+                        "min_bytes": out.min_bytes,
+                    }
+                    for out in task.outputs
                 ],
-                side_effects=side_effects,
+                side_effects=task.side_effects.value,
+                staging_dir=staging_dir,
             )
 
             reconciliations.append(
@@ -164,6 +162,7 @@ class RecoveryManager:
                     "reason": reconciliation.reason,
                     "safe": reconciliation.safe,
                     "reuse": reconciliation.reuse,
+                    "resume_phase": reconciliation.resume_phase,
                 }
             )
 
@@ -178,9 +177,9 @@ class RecoveryManager:
 
     def apply_recovery_plan(
         self,
-        run_state: dict,
+        run_state: RunState,
         recovery_plan: dict,
-    ) -> dict:
+    ) -> RunState:
         """
         Apply recovery plan to run state.
 
@@ -191,21 +190,25 @@ class RecoveryManager:
         Returns:
             Updated run state
         """
-        # Apply task status changes
         for recon in recovery_plan["reconciliations"]:
             task_id = recon["task_id"]
-            run_state["tasks"][task_id] = recon["new_status"]
+            new_status = TaskStatus(recon["new_status"])
+            task_state = run_state.tasks.get(task_id)
+            if task_state is None:
+                task_state = TaskState(task_id=task_id, status=new_status)
+                run_state.tasks[task_id] = task_state
+            task_state.status = new_status
+            if new_status == TaskStatus.BLOCKED:
+                task_state.block_reason = recon["reason"]
+            elif new_status in (TaskStatus.PENDING, TaskStatus.RETRYING):
+                task_state.block_reason = None
 
-        # Update run status if needed
-        if run_state["status"] == RunStatus.CANCELLED.value:
-            # Cancelled run becomes running again
-            run_state["status"] = RunStatus.RUNNING.value
-        elif run_state["status"] == RunStatus.AWAITING_APPROVAL.value:
-            # Keep awaiting approval
-            pass
-        else:
-            # Running or completed_with_blockers -> running
-            run_state["status"] = RunStatus.RUNNING.value
+        if run_state.status in (
+            RunStatus.CANCELLED,
+            RunStatus.AWAITING_APPROVAL,
+            RunStatus.COMPLETED_WITH_BLOCKERS,
+        ):
+            run_state.status = RunStatus.RUNNING
 
         return run_state
 
@@ -220,35 +223,33 @@ class RecoveryManager:
             allow_config_change: Allow executor config changes
 
         Returns:
-            Recovery info dict
+            Recovery info dict with recovery_plan, updated_state (RunState), workflow
 
         Raises:
             RecoveryError: If resume is not safe
         """
-        # Check if can resume
         can_resume, reason = self.can_resume()
         if not can_resume:
             raise RecoveryError(f"Cannot resume: {reason}")
 
-        # Load run state
         run_json = self.run_dir / "run.json"
-        with open(run_json) as f:
-            run_state = json.load(f)
+        try:
+            with open(run_json) as f:
+                run_state = RunState.from_dict(json.load(f))
+        except (OSError, json.JSONDecodeError, ValueError, TypeError) as e:
+            raise RecoveryError(f"Cannot load run state: {e}") from e
 
-        # Validate snapshot
-        expected_hash = run_state.get("workflow_hash")
         valid, reason = self.validate_snapshot(
-            expected_hash=expected_hash,
+            expected_hash=run_state.workflow_snapshot_hash,
             allow_config_change=allow_config_change,
+            expected_config_hash=run_state.executor_config_hash,
         )
         if not valid:
             raise RecoveryError(f"Snapshot validation failed: {reason}")
 
-        # Load workflow
         workflow_snapshot = self.run_dir / "workflow.yaml"
         workflow, _ = parse_workflow_file(workflow_snapshot)
 
-        # Create recovery plan
         recovery_plan = self.create_recovery_plan(workflow, run_state)
 
         if not recovery_plan["can_proceed"]:
@@ -257,7 +258,6 @@ class RecoveryManager:
                 f"Unsafe recovery: tasks {unsafe_tasks} require human intervention"
             )
 
-        # Apply plan (in-memory, caller will persist)
         updated_state = self.apply_recovery_plan(run_state, recovery_plan)
 
         return {
