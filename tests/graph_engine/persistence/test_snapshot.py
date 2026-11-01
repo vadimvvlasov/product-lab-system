@@ -1,0 +1,79 @@
+"""Tests for executor config snapshots."""
+
+import textwrap
+
+import pytest
+
+from graph_engine.errors import ExecutorError
+from graph_engine.parser import parse_workflow
+from graph_engine.persistence.snapshot import snapshot_executor_config
+
+WORKFLOW = """\
+version: "1"
+workflow:
+  id: snapshot-test
+  description: Snapshot test
+execution:
+  max_concurrency: 1
+  max_retries: 0
+executors:
+  worker:
+    adapter: mock
+    config:
+{config}
+executor_mapping: {{}}
+tasks:
+  - id: task-1
+    type: work
+    verification:
+      - id: check
+        method: command
+        command: "true"
+"""
+
+
+def make_workflow(config: str):
+    indented = textwrap.indent(textwrap.dedent(config).strip(), "      ")
+    return parse_workflow(WORKFLOW.format(config=indented).encode())
+
+
+def test_env_reference_is_kept_as_reference(tmp_path):
+    workflow = make_workflow("api_key: env:OPENAI_API_KEY")
+    target = tmp_path / "executor_config.json"
+
+    snapshot_executor_config(workflow, target)
+
+    content = target.read_text()
+    assert "env:OPENAI_API_KEY" in content
+    assert "sk-live" not in content
+
+
+def test_literal_secret_is_rejected_and_not_written(tmp_path):
+    workflow = make_workflow("api_key: sk-live-123456")
+    target = tmp_path / "executor_config.json"
+
+    with pytest.raises(ExecutorError, match="env:NAME"):
+        snapshot_executor_config(workflow, target)
+
+    assert not target.exists()
+
+
+def test_nested_literal_secret_is_rejected(tmp_path):
+    workflow = make_workflow(
+        """
+        headers:
+          authorization: Bearer sk-live-123456
+        """
+    )
+
+    with pytest.raises(ExecutorError, match="authorization"):
+        snapshot_executor_config(workflow, tmp_path / "executor_config.json")
+
+
+def test_non_secret_key_containing_token_is_allowed(tmp_path):
+    workflow = make_workflow("max_tokens: 1024")
+    target = tmp_path / "executor_config.json"
+
+    snapshot_executor_config(workflow, target)
+
+    assert '"max_tokens": 1024' in target.read_text()

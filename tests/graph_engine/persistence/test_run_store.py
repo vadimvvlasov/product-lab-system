@@ -111,3 +111,41 @@ tasks:
 
     with pytest.raises(ValidationError):
         create_run(workflow, workflow_yaml, temp_dir)
+
+
+def test_create_run_rejects_literal_secret_before_writing(temp_dir):
+    """A literal secret must fail before a partial run directory exists."""
+    import pytest
+
+    from graph_engine.errors import ExecutorError
+
+    workflow_yaml = b"""
+version: "1"
+workflow:
+  id: test
+  description: Test
+execution:
+  max_concurrency: 1
+  max_retries: 0
+executors:
+  worker:
+    adapter: mock
+    config:
+      api_key: sk-live-123456
+executor_mapping: {}
+tasks:
+  - id: task-1
+    type: work
+    executor: worker
+    verification:
+      - id: check
+        method: command
+        command: "true"
+"""
+
+    workflow = parse_workflow(workflow_yaml)
+
+    with pytest.raises(ExecutorError):
+        create_run(workflow, workflow_yaml, temp_dir)
+
+    assert list(temp_dir.iterdir()) == []

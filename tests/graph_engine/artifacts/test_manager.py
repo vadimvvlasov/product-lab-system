@@ -80,3 +80,30 @@ def test_copy_input_artifact(temp_dir):
     copied = target_dir / "inputs" / "input-data" / "input.txt"
     assert copied.exists()
     assert copied.read_text() == "input data"
+
+
+def test_validate_output_rejects_path_escape(temp_dir):
+    """A staged path must stay inside the staging artifacts directory."""
+    staging_root = temp_dir / "staging"
+    (staging_root / "artifacts").mkdir(parents=True)
+
+    manager = ArtifactManager(temp_dir)
+
+    with pytest.raises(ArtifactError, match="escapes"):
+        manager.validate_output("artifacts/../../escape.txt", staging_root)
+
+
+def test_publish_rejects_path_escape(temp_dir):
+    """A publish target must stay inside the run artifacts directory."""
+    staging_root = temp_dir / "staging"
+    staged_file = staging_root / "artifacts" / "result.txt"
+    staged_file.parent.mkdir(parents=True)
+    staged_file.write_text("result")
+
+    manager = ArtifactManager(temp_dir)
+
+    with pytest.raises(ArtifactError, match="escapes"):
+        manager.publish_artifact(staged_file, "artifacts/../escape.txt")
+
+    assert staged_file.exists()
+    assert not (temp_dir / "escape.txt").exists()

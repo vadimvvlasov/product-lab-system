@@ -45,11 +45,12 @@ def create_run(
         run_id = generate_run_id(workflow.workflow.id)
     
     layout = RunLayout(runs_dir, run_id)
-    layout.create_structure()
-    
-    # Snapshot workflow and config
-    workflow_hash = snapshot_workflow(workflow_bytes, layout.workflow_snapshot)
+
+    # Snapshot config first: it rejects literal secrets before anything is
+    # written, so a rejected workflow leaves no partial run directory.
     config_hash = snapshot_executor_config(workflow, layout.executor_config_snapshot)
+    workflow_hash = snapshot_workflow(workflow_bytes, layout.workflow_snapshot)
+    layout.create_structure()
     
     # Initialize task states
     tasks = {}

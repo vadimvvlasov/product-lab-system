@@ -2,8 +2,10 @@
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
+from graph_engine.errors import ExecutorError
 from graph_engine.models.workflow import WorkflowDefinition
 
 
@@ -61,15 +63,36 @@ def snapshot_executor_config(workflow: WorkflowDefinition, target: Path) -> str:
 
 def _normalize_config(config: dict) -> dict:
     """
-    Normalize config for snapshot (mask secrets).
-    
-    Real implementation in Stage 8 will:
-    - Detect env:NAME references
-    - Reject literal secret keys
-    - Store env var names, not values
+    Normalize config for the snapshot.
+
+    `env:NAME` references are stored as references, never resolved. Literal
+    values for secret-looking keys are rejected so that credentials do not end
+    up in the run directory.
     """
-    # Placeholder: pass through for now
-    return config.copy()
+    normalized = {}
+    for key, value in config.items():
+        if _looks_secret(key):
+            if isinstance(value, str) and value.startswith("env:"):
+                normalized[key] = value
+                continue
+            raise ExecutorError(
+                f"executor config key '{key}' looks secret; use env:NAME instead "
+                "of a literal value"
+            )
+        if isinstance(value, dict):
+            normalized[key] = _normalize_config(value)
+        else:
+            normalized[key] = value
+    return normalized
+
+
+_SECRET_KEY = re.compile(
+    r"(^|_)(api_key|token|secret|password|credential|authorization)$"
+)
+
+
+def _looks_secret(key: str) -> bool:
+    return bool(_SECRET_KEY.search(key.lower()))
 
 
 def verify_snapshot_hash(path: Path, expected_hash: str) -> bool:
