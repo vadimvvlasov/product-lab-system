@@ -340,7 +340,7 @@ G1 — авторизация на уровне эксперимента, а н�
 | Задача | Когда | Где описано |
 |---|---|---|
 | Sweep: поиск, кластеры, черновик экспресс-оценки | раз в месяц | [llm-research](modules/llm-research.md), § Режим sweep |
-| Проверка URL, цитаты и даты (`verified_by: human`, `verified_at`); автоматический verifier пока не реализован | после sweep и углублённого сбора | [llm-research](modules/llm-research.md), § Процесс |
+| Проверка URL, цитаты и даты (`verified_by: human`, `verified_at`); реализована только offline snapshot-проверка по локальным клиппингам (`pls_evidence`), она не заменяет человека для B/A; сетевой verifier не реализован | после sweep и углублённого сбора | [llm-research](modules/llm-research.md), § Процесс |
 | Лиды из авторов прошедших кластеров (`status: found`) | после sweep | [10-discover](10-discover.md), § Sweep |
 | Черновик эксперимента из карточки идеи | при переходе к тесту | шаблон [experiment](../templates/experiment.md) |
 | Выгрузка воронки в заметку эксперимента | раз в неделю для `live` | [30-experiment](30-experiment.md), § Измерение |
