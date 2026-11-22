@@ -81,18 +81,29 @@ def _normalize_config(config: dict) -> dict:
             )
         if isinstance(value, dict):
             normalized[key] = _normalize_config(value)
+        elif isinstance(value, list):
+            normalized[key] = [_normalize_value(item) for item in value]
         else:
             normalized[key] = value
     return normalized
 
 
+def _normalize_value(value):
+    if isinstance(value, dict):
+        return _normalize_config(value)
+    if isinstance(value, list):
+        return [_normalize_value(item) for item in value]
+    return value
+
+
 _SECRET_KEY = re.compile(
-    r"(^|_)(api_key|token|secret|password|credential|authorization)$"
+    r"(^|_)(api_key|token|secret|secret_key|password|credential|authorization)$"
 )
 
 
 def _looks_secret(key: str) -> bool:
-    return bool(_SECRET_KEY.search(key.lower()))
+    snake = re.sub(r"(?<!^)(?=[A-Z])", "_", key).lower()
+    return bool(_SECRET_KEY.search(snake))
 
 
 def verify_snapshot_hash(path: Path, expected_hash: str) -> bool:

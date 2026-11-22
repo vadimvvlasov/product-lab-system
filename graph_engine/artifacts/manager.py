@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from graph_engine.errors import ArtifactError
+from graph_engine.ids import require_safe_id
 
 
 @dataclass
@@ -163,7 +164,17 @@ class ArtifactManager:
             target_dir: Target staging/inputs directory
             artifact_name: Artifact name (for subdirectory)
         """
+        require_safe_id(artifact_name, "input artifact name")
+
         target_subdir = target_dir / "inputs" / artifact_name
+
+        inputs_root = (target_dir / "inputs").resolve()
+        resolved_subdir = target_subdir.resolve()
+        if inputs_root not in resolved_subdir.parents:
+            raise ArtifactError(
+                f"Input artifact name escapes staging directory: {artifact_name}"
+            )
+
         target_subdir.mkdir(parents=True, exist_ok=True)
         
         # Preserve relative structure if source is in a nested path

@@ -77,3 +77,23 @@ def test_non_secret_key_containing_token_is_allowed(tmp_path):
     snapshot_executor_config(workflow, target)
 
     assert '"max_tokens": 1024' in target.read_text()
+
+
+@pytest.mark.parametrize("key", ["apiKey", "secret_key"])
+def test_camel_case_and_secret_key_are_rejected(tmp_path, key):
+    workflow = make_workflow(f"{key}: sk-live-123456")
+
+    with pytest.raises(ExecutorError, match="env:NAME"):
+        snapshot_executor_config(workflow, tmp_path / "executor_config.json")
+
+
+def test_secret_in_list_is_rejected(tmp_path):
+    workflow = make_workflow(
+        """
+        headers:
+          - authorization: Bearer sk-live-123456
+        """
+    )
+
+    with pytest.raises(ExecutorError, match="authorization"):
+        snapshot_executor_config(workflow, tmp_path / "executor_config.json")

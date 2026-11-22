@@ -65,7 +65,15 @@ class RunController:
             self.state.status = RunStatus.RUNNING
         self._emit("run_started", run_id=self.state.run_id)
 
-        guard = len(self.workflow.tasks) * (self.state.max_retries + 2) + 10
+        guard = 10 + sum(
+            (
+                task.max_retries
+                if task.max_retries is not None
+                else self.state.max_retries
+            )
+            + 2
+            for task in self.workflow.tasks
+        )
         for _ in range(guard):
             if self.layout.cancel_sentinel.exists():
                 return self._cancel()
@@ -83,11 +91,13 @@ class RunController:
                         return self.state
 
             approved = self._approved_task_ids()
+            rejected = self._rejected_task_ids()
             plan = compute_ready_tasks(
                 self.workflow,
                 self.state,
                 self.state.max_concurrency,
                 approved_task_ids=approved,
+                rejected_task_ids=rejected,
             )
 
             for task_id, reason in plan.blocked.items():
@@ -223,12 +233,18 @@ class RunController:
                 self._block(task, task_state, "staged artifacts missing on resume")
                 return
 
+        try:
+            input_artifacts = self._input_paths(task, staging)
+        except ValueError as exc:
+            self._block(task, task_state, f"cannot build verification context: {exc}")
+            return
+
         results, passed = self.verifier.verify_all(
             task.verification,
             staging,
             {
                 "task_id": task.id,
-                "input_artifacts": {},
+                "input_artifacts": input_artifacts,
                 "required_outputs": {out.name: out.path for out in task.outputs},
             },
         )
@@ -273,12 +289,15 @@ class RunController:
         if (
             task.approval == ApprovalRequirement.REQUIRED
             and task.approval_point == ApprovalPoint.BEFORE_PUBLISH
-            and not self._is_approved(task.id)
         ):
-            self.state.status = RunStatus.AWAITING_APPROVAL
-            self._persist()
-            self._emit("run_awaiting_approval", tasks=[task.id])
-            return
+            if self._is_rejected(task.id):
+                self._block(task, task_state, "approval rejected")
+                return
+            if not self._is_approved(task.id):
+                self.state.status = RunStatus.AWAITING_APPROVAL
+                self._persist()
+                self._emit("run_awaiting_approval", tasks=[task.id])
+                return
 
         try:
             self._publish(task, staging, artifact_records)
@@ -317,12 +336,16 @@ class RunController:
             )
         return records
 
-    def _build_context(
-        self, task: TaskDefinition, attempt: int, staging: Path
-    ) -> ExecutionContext:
-        input_artifacts: dict[str, Path] = {}
+    def _input_paths(self, task: TaskDefinition, staging: Path) -> dict[str, Path]:
+        """Map declared input names to their staged paths."""
+        paths: dict[str, Path] = {}
         for inp in task.inputs:
             producer = self.workflow.get_task(inp.from_task)
+            if producer is None:
+                raise ValueError(
+                    f"task '{task.id}': input '{inp.name}' references unknown "
+                    f"task '{inp.from_task}'"
+                )
             output = next((o for o in producer.outputs if o.name == inp.artifact), None)
             if output is None:
                 raise ValueError(
@@ -330,8 +353,18 @@ class RunController:
                     f"artifact '{inp.artifact}' on '{inp.from_task}'"
                 )
             source = self.layout.run_root / output.path
+            paths[inp.name] = staging / "inputs" / inp.name / source.name
+        return paths
+
+    def _build_context(
+        self, task: TaskDefinition, attempt: int, staging: Path
+    ) -> ExecutionContext:
+        input_artifacts = self._input_paths(task, staging)
+        for inp in task.inputs:
+            producer = self.workflow.get_task(inp.from_task)
+            output = next((o for o in producer.outputs if o.name == inp.artifact), None)
+            source = self.layout.run_root / output.path
             self.artifacts.copy_input_artifact(source, staging, inp.name)
-            input_artifacts[inp.name] = staging / "inputs" / inp.name / source.name
 
         return ExecutionContext(
             task_id=task.id,
@@ -360,10 +393,13 @@ class RunController:
             data = json.loads(path.read_text())
         except (OSError, ValueError):
             return None
+        feedback = data.get("retry_feedback") or {}
         messages = data.get("verification_messages") or [data.get("summary", "")]
         return RetryFeedback(
-            previous_attempt=attempt - 1,
-            failures=[m for m in messages if m],
+            previous_attempt=feedback.get("previous_attempt", attempt - 1),
+            failures=feedback.get("failures") or [m for m in messages if m],
+            reviewer_findings=feedback.get("reviewer_findings"),
+            missing_artifacts=feedback.get("missing_artifacts", []),
         )
 
     # -- retry and terminal states --------------------------------------
@@ -439,9 +475,18 @@ class RunController:
             task.id for task in self.workflow.tasks if self._is_approved(task.id)
         )
 
+    def _rejected_task_ids(self) -> frozenset[str]:
+        return frozenset(
+            task.id for task in self.workflow.tasks if self._is_rejected(task.id)
+        )
+
     def _is_approved(self, task_id: str) -> bool:
         decision = self.approvals.get_approval(task_id)
         return bool(decision and decision.get("approved") is True)
+
+    def _is_rejected(self, task_id: str) -> bool:
+        decision = self.approvals.get_approval(task_id)
+        return bool(decision and decision.get("approved") is False)
 
     def _set_status(
         self,

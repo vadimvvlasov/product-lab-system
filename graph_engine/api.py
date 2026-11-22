@@ -78,6 +78,7 @@ def resume_run(
         state.max_run_duration_minutes = base + extend_run_timeout_minutes
 
     layout = RunLayout(run_path.parent, run_path.name)
+    layout.cancel_sentinel.unlink(missing_ok=True)
     save_run_state(state, layout)
     return RunController(workflow, layout, state).run()
 

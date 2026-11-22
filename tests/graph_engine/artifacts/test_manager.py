@@ -107,3 +107,17 @@ def test_publish_rejects_path_escape(temp_dir):
 
     assert staged_file.exists()
     assert not (temp_dir / "escape.txt").exists()
+
+
+@pytest.mark.parametrize("name", ["../escape", "a/b", "/tmp/escape"])
+def test_copy_input_artifact_rejects_unsafe_name(temp_dir, name):
+    source = temp_dir / "artifacts" / "input.txt"
+    source.parent.mkdir(parents=True)
+    source.write_text("input")
+
+    manager = ArtifactManager(temp_dir)
+
+    with pytest.raises(ValueError):
+        manager.copy_input_artifact(source, temp_dir / "staging", name)
+
+    assert not (temp_dir / "escape").exists()

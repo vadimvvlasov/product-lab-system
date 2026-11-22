@@ -14,6 +14,7 @@ from graph_engine.api import (
     run_workflow,
     validate_workflow_file,
 )
+from graph_engine.errors import ValidationError
 from graph_engine.models.enums import RunStatus
 
 EXIT_OK = 0
@@ -98,7 +99,11 @@ def _cmd_validate(args) -> int:
 
 
 def _cmd_run(args) -> int:
-    state, layout = run_workflow(args.workflow, args.runs_dir, args.run_id)
+    try:
+        state, layout = run_workflow(args.workflow, args.runs_dir, args.run_id)
+    except ValidationError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_INVALID_WORKFLOW
     _print_state(state)
     print(f"run directory: {layout.run_root}")
     return _exit_for_status(state.status)

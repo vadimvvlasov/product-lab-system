@@ -149,3 +149,39 @@ tasks:
         create_run(workflow, workflow_yaml, temp_dir)
 
     assert list(temp_dir.iterdir()) == []
+
+
+def test_create_run_does_not_overwrite_existing_run(temp_dir):
+    import pytest
+
+    from graph_engine.errors import ValidationError
+
+    workflow_yaml = b"""
+version: "1"
+workflow:
+  id: test
+  description: Test
+execution:
+  max_concurrency: 1
+  max_retries: 0
+executors:
+  mock:
+    adapter: mock
+    config: {}
+executor_mapping: {}
+tasks:
+  - id: task-a
+    type: test
+    executor: mock
+    verification:
+      - id: check
+        method: command
+        command: "true"
+"""
+
+    workflow = parse_workflow(workflow_yaml)
+    run_id = "test-20261031T210000Z-abcdef"
+    create_run(workflow, workflow_yaml, temp_dir, run_id=run_id)
+
+    with pytest.raises(ValidationError, match="already exists"):
+        create_run(workflow, workflow_yaml, temp_dir, run_id=run_id)

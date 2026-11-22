@@ -31,6 +31,14 @@ def validate_schema(workflow: WorkflowDefinition) -> list[str]:
                 "(alphanumeric, underscore, dash only)"
             )
         
+        # Input artifact names become directory names in staging.
+        for inp in task.inputs:
+            if not is_safe_id(inp.name):
+                errors.append(
+                    f"task '{task.id}' input '{inp.name}' must be filesystem-safe "
+                    "(alphanumeric, underscore, dash only)"
+                )
+
         # Output paths must start with artifacts/ and be relative
         for output in task.outputs:
             path = Path(output.path)
@@ -45,6 +53,11 @@ def validate_schema(workflow: WorkflowDefinition) -> list[str]:
                 errors.append(
                     f"task '{task.id}' output '{output.name}': "
                     f"path must start with 'artifacts/', got '{output.path}'"
+                )
+            elif output.path == "artifacts/":
+                errors.append(
+                    f"task '{task.id}' output '{output.name}': "
+                    "path must name a file under 'artifacts/', got 'artifacts/'"
                 )
             
             if ".." in path.parts:

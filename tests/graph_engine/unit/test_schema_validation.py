@@ -138,3 +138,62 @@ def test_side_effects_requires_idempotency_key():
     
     errors = validate_schema(workflow)
     assert any("requires 'idempotency_key'" in err for err in errors)
+
+
+def test_input_name_must_be_filesystem_safe():
+    """Input names become staging directory names and must not traverse."""
+    from graph_engine.models.workflow import TaskInput
+
+    workflow = WorkflowDefinition(
+        version="1",
+        workflow=WorkflowMetadata(id="test", description="Test"),
+        execution=ExecutionLimits(max_concurrency=1, max_retries=0),
+        executors={"mock": ExecutorConfig(adapter="mock")},
+        executor_mapping={},
+        tasks=[
+            TaskDefinition(
+                id="task-1",
+                type="test",
+                executor="mock",
+                verification=[
+                    VerificationCriterion(
+                        id="check", method=VerificationMethod.COMMAND, command="true"
+                    )
+                ],
+                inputs=[
+                    TaskInput(name="../../escape", from_task="task-0", artifact="out")
+                ],
+            )
+        ],
+    )
+
+    errors = validate_schema(workflow)
+
+    assert any("filesystem-safe" in err for err in errors)
+
+
+def test_output_path_cannot_be_the_artifacts_directory():
+    workflow = WorkflowDefinition(
+        version="1",
+        workflow=WorkflowMetadata(id="test", description="Test"),
+        execution=ExecutionLimits(max_concurrency=1, max_retries=0),
+        executors={"mock": ExecutorConfig(adapter="mock")},
+        executor_mapping={},
+        tasks=[
+            TaskDefinition(
+                id="task-1",
+                type="test",
+                executor="mock",
+                verification=[
+                    VerificationCriterion(
+                        id="check", method=VerificationMethod.COMMAND, command="true"
+                    )
+                ],
+                outputs=[TaskOutput(name="out", path="artifacts/")],
+            )
+        ],
+    )
+
+    errors = validate_schema(workflow)
+
+    assert any("must name a file" in err for err in errors)

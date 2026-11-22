@@ -46,6 +46,9 @@ def create_run(
     
     layout = RunLayout(runs_dir, run_id)
 
+    if layout.run_root.exists():
+        raise ValidationError(f"Run already exists: {run_id}")
+
     # Snapshot config first: it rejects literal secrets before anything is
     # written, so a rejected workflow leaves no partial run directory.
     config_hash = snapshot_executor_config(workflow, layout.executor_config_snapshot)

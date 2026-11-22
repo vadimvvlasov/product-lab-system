@@ -21,6 +21,7 @@ def compute_ready_tasks(
     run_state: RunState,
     max_concurrency: int,
     approved_task_ids: frozenset[str] = frozenset(),
+    rejected_task_ids: frozenset[str] = frozenset(),
 ) -> ReadinessPlan:
     """
     Compute which tasks are ready, blocked, or waiting for approval.
@@ -32,14 +33,21 @@ def compute_ready_tasks(
         run_state: Current run state
         max_concurrency: Maximum concurrent tasks
         approved_task_ids: Tasks with a recorded human approval
+        rejected_task_ids: Tasks with a recorded human rejection
 
     Returns:
         ReadinessPlan with ready, blocked (reason per task), awaiting_approval
     """
     plan = ReadinessPlan()
 
-    # Propagate blocking transitively before dispatching anything.
+    # A rejection is terminal for the task and blocks its dependents.
     blocked_ids: set[str] = set()
+    for task in workflow.tasks:
+        if _needs_approval(task) and task.id in rejected_task_ids:
+            plan.blocked[task.id] = "approval rejected"
+            blocked_ids.add(task.id)
+
+    # Propagate blocking transitively before dispatching anything.
     changed = True
     while changed:
         changed = False
