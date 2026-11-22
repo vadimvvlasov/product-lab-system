@@ -100,3 +100,58 @@ def test_secret_in_list_is_rejected(tmp_path):
 
     with pytest.raises(ExecutorError, match="authorization"):
         snapshot_executor_config(workflow, tmp_path / "executor_config.json")
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "private_key", "privateKey", "PRIVATE_KEY", "apikey", "APIKEY", "ApiKey",
+        "passwd", "PASSWD", "pwd", "PWD", "db_pwd", "user_passwd",
+        "api_key", "token", "secret", "password", "credential", "authorization",
+    ],
+)
+def test_secret_key_variants_reject_literal(tmp_path, key):
+    from graph_engine.persistence.snapshot import _looks_secret
+
+    assert _looks_secret(key)
+    workflow = make_workflow(f"{key}: literal-value")
+    target = tmp_path / "executor_config.json"
+
+    with pytest.raises(ExecutorError, match="env:NAME"):
+        snapshot_executor_config(workflow, target)
+
+    assert not target.exists()
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["max_tokens", "tokenizer", "keyboard", "token_count", "monkey", "pwdfile",
+     "cache_key", "sort_key"],
+)
+def test_non_secret_keys_accept_literal(tmp_path, key):
+    workflow = make_workflow(f"{key}: literal-value")
+    target = tmp_path / "executor_config.json"
+
+    snapshot_executor_config(workflow, target)
+
+    assert "literal-value" in target.read_text()
+
+
+@pytest.mark.parametrize("value", ['"env:"', '"env: "', '"env:   "', "null", "5", "[a, b]"])
+def test_secret_key_rejects_empty_env_and_non_strings(tmp_path, value):
+    workflow = make_workflow(f"api_key: {value}")
+    target = tmp_path / "executor_config.json"
+
+    with pytest.raises(ExecutorError, match="env:NAME"):
+        snapshot_executor_config(workflow, target)
+
+    assert not target.exists()
+
+
+def test_secret_key_env_reference_kept_verbatim(tmp_path):
+    workflow = make_workflow("pwd: env:DB_PWD")
+    target = tmp_path / "executor_config.json"
+
+    snapshot_executor_config(workflow, target)
+
+    assert "env:DB_PWD" in target.read_text()

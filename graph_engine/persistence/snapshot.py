@@ -72,7 +72,11 @@ def _normalize_config(config: dict) -> dict:
     normalized = {}
     for key, value in config.items():
         if _looks_secret(key):
-            if isinstance(value, str) and value.startswith("env:"):
+            if (
+                isinstance(value, str)
+                and value.startswith("env:")
+                and value[4:].strip()
+            ):
                 normalized[key] = value
                 continue
             raise ExecutorError(
@@ -97,7 +101,7 @@ def _normalize_value(value):
 
 
 _SECRET_KEY = re.compile(
-    r"(^|_)(api_key|token|secret|secret_key|password|credential|authorization)$"
+    r"(^|_)(api_key|apikey|private_key|token|secret|secret_key|password|passwd|pwd|credential|authorization)$"
 )
 
 
