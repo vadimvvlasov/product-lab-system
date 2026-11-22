@@ -108,6 +108,9 @@ def test_secret_in_list_is_rejected(tmp_path):
         "private_key", "privateKey", "PRIVATE_KEY", "apikey", "APIKEY", "ApiKey",
         "passwd", "PASSWD", "pwd", "PWD", "db_pwd", "user_passwd",
         "api_key", "token", "secret", "password", "credential", "authorization",
+        "access_key", "accessKey", "ACCESS_KEY", "ACCESS-KEY", "access-key", "accesskey",
+        "ssh_key", "sshKey", "SSH_KEY", "ssh-key", "sshkey",
+        "aws_secret_access_key", "AWS_ACCESS_KEY", "deploy_ssh_key", "public_ssh_key",
     ],
 )
 def test_secret_key_variants_reject_literal(tmp_path, key):
@@ -126,7 +129,9 @@ def test_secret_key_variants_reject_literal(tmp_path, key):
 @pytest.mark.parametrize(
     "key",
     ["max_tokens", "tokenizer", "keyboard", "token_count", "monkey", "pwdfile",
-     "cache_key", "sort_key"],
+     "cache_key", "sort_key",
+     "access_key_id", "accessKeyId", "AWS_ACCESS_KEY_ID", "ssh_key_path", "ssh_key_file",
+     "ssh_keys", "access_keyboard", "bypass_key", "my_accesskeyname", "ssh_public_key"],
 )
 def test_non_secret_keys_accept_literal(tmp_path, key):
     workflow = make_workflow(f"{key}: literal-value")
@@ -155,3 +160,27 @@ def test_secret_key_env_reference_kept_verbatim(tmp_path):
     snapshot_executor_config(workflow, target)
 
     assert "env:DB_PWD" in target.read_text()
+
+
+@pytest.mark.parametrize(
+    "line, reference",
+    [("access_key: env:AWS_ACCESS_KEY", "env:AWS_ACCESS_KEY"),
+     ("sshKey: env:DEPLOY_KEY", "env:DEPLOY_KEY")],
+)
+def test_new_secret_keys_env_reference_kept_verbatim(tmp_path, line, reference):
+    workflow = make_workflow(line)
+    target = tmp_path / "executor_config.json"
+
+    snapshot_executor_config(workflow, target)
+
+    assert reference in target.read_text()
+
+
+def test_nested_ssh_key_rejects_literal_without_writing(tmp_path):
+    workflow = make_workflow("ssh:\n  ssh_key: literal")
+    target = tmp_path / "executor_config.json"
+
+    with pytest.raises(ExecutorError, match="env:NAME"):
+        snapshot_executor_config(workflow, target)
+
+    assert not target.exists()
