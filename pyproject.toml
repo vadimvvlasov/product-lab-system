@@ -16,8 +16,9 @@ dev = ["pytest>=8"]
 pls = "graph_engine.cli.main:main"
 
 [tool.setuptools.packages.find]
-include = ["graph_engine*"]
+include = ["graph_engine*", "pls_evidence*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/graph_engine"]
+testpaths = ["tests/graph_engine", "tests/evidence_tools"]
+pythonpath = ["."]
 addopts = "-q"
