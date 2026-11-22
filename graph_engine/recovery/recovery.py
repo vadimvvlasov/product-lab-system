@@ -178,11 +178,62 @@ class RecoveryManager:
             if not reconciliation.safe:
                 unsafe_tasks.append(task_id)
 
+        self._reset_stale_downstream(task_map, reconciliations, unsafe_tasks)
+
         return {
             "reconciliations": reconciliations,
             "unsafe_tasks": unsafe_tasks,
             "can_proceed": len(unsafe_tasks) == 0,
         }
+
+    @staticmethod
+    def _reset_stale_downstream(
+        task_map: dict,
+        reconciliations: list[dict],
+        unsafe_tasks: list[str],
+    ) -> None:
+        """
+        Reset COMPLETED tasks whose upstream is being reset from COMPLETED.
+
+        A completed result built from an input that is about to be regenerated
+        is stale. Walks dependents (depends_on and inputs.from_task)
+        transitively. Only an upstream that was COMPLETED and is reset triggers
+        this; BLOCKED/FAILED upstreams keep their existing handling.
+        """
+        by_id = {recon["task_id"]: recon for recon in reconciliations}
+        dependents: dict[str, list[str]] = {}
+        for task in task_map.values():
+            upstream_ids = set(task.depends_on) | {i.from_task for i in task.inputs}
+            for upstream_id in upstream_ids:
+                dependents.setdefault(upstream_id, []).append(task.id)
+
+        queue = [
+            recon["task_id"]
+            for recon in reconciliations
+            if recon["old_status"] == TaskStatus.COMPLETED.value
+            and recon["new_status"] != TaskStatus.COMPLETED.value
+        ]
+        while queue:
+            upstream_id = queue.pop(0)
+            for dependent_id in dependents.get(upstream_id, []):
+                recon = by_id.get(dependent_id)
+                if recon is None or not (
+                    recon["old_status"] == TaskStatus.COMPLETED.value
+                    and recon["new_status"] == TaskStatus.COMPLETED.value
+                ):
+                    continue
+                reason = f"upstream '{upstream_id}' reset"
+                recon["reuse"] = False
+                recon["reason"] = reason
+                if task_map[dependent_id].side_effects.value == "unsafe":
+                    recon["new_status"] = TaskStatus.BLOCKED.value
+                    recon["safe"] = False
+                    if dependent_id not in unsafe_tasks:
+                        unsafe_tasks.append(dependent_id)
+                else:
+                    recon["new_status"] = TaskStatus.PENDING.value
+                    recon["safe"] = True
+                queue.append(dependent_id)
 
     def apply_recovery_plan(
         self,
@@ -206,7 +257,12 @@ class RecoveryManager:
             if task_state is None:
                 task_state = TaskState(task_id=task_id, status=new_status)
                 run_state.tasks[task_id] = task_state
+            was_completed = task_state.status == TaskStatus.COMPLETED
             task_state.status = new_status
+            if was_completed and new_status != TaskStatus.COMPLETED:
+                # Published files stay on disk; a re-run overwrites them.
+                task_state.artifacts = []
+                task_state.completed_at = None
             if new_status == TaskStatus.BLOCKED:
                 task_state.block_reason = recon["reason"]
             elif new_status in (TaskStatus.PENDING, TaskStatus.RETRYING):

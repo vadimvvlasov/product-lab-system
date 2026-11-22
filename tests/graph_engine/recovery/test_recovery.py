@@ -299,3 +299,192 @@ def test_resume_workflow_without_recorded_checksum_reexecutes(tmp_path):
     recon = info["recovery_plan"]["reconciliations"][0]
     assert recon["new_status"] == TaskStatus.PENDING.value
     assert "no recorded checksum" in recon["reason"].lower()
+
+
+CHAIN_WORKFLOW = """version: "1"
+workflow:
+  id: chain-workflow
+  description: Chain
+execution:
+  max_concurrency: 1
+  max_retries: 0
+executors:
+  mock:
+    adapter: mock
+    config: {{}}
+executor_mapping:
+  test: mock
+tasks:
+  - id: a
+    type: test
+    outputs:
+      - name: out
+        path: artifacts/a.txt
+    verification:
+      - id: v
+        method: command
+        command: "test -f artifacts/a.txt"
+  - id: b
+    type: test
+{b_extra}
+    depends_on: [a]
+    inputs:
+      - name: data
+        from: a
+        artifact: out
+    outputs:
+      - name: out
+        path: artifacts/b.txt
+    verification:
+      - id: v
+        method: command
+        command: "test -f artifacts/b.txt"
+  - id: c
+    type: test
+    depends_on: [b]
+    outputs:
+      - name: out
+        path: artifacts/c.txt
+    verification:
+      - id: v
+        method: command
+        command: "test -f artifacts/c.txt"
+  - id: d
+    type: test
+    outputs:
+      - name: out
+        path: artifacts/d.txt
+    verification:
+      - id: v
+        method: command
+        command: "test -f artifacts/d.txt"
+"""
+
+CHAIN_RUN_ID = "chain-workflow-20261031T210000Z-abcdef"
+
+
+def make_chain_run(tmp_path, b_extra="", delete_a=True):
+    yaml_text = CHAIN_WORKFLOW.format(b_extra=b_extra)
+    workflow = parse_workflow(yaml_text.encode())
+    state, layout = create_run(
+        workflow, yaml_text.encode(), tmp_path / "runs", run_id=CHAIN_RUN_ID
+    )
+    state.status = RunStatus.RUNNING
+    for task_id in ("a", "b", "c", "d"):
+        target = layout.run_root / "artifacts" / f"{task_id}.txt"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(f"{task_id} content")
+        task_state = state.tasks[task_id]
+        task_state.status = TaskStatus.COMPLETED
+        task_state.current_attempt = 1
+        task_state.completed_at = "2026-10-31T21:00:00+00:00"
+        task_state.artifacts = [
+            {
+                "name": "out",
+                "path": f"artifacts/{task_id}.txt",
+                "size_bytes": target.stat().st_size,
+                "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+            }
+        ]
+    if delete_a:
+        (layout.run_root / "artifacts" / "a.txt").unlink()
+    save_run_state(state, layout)
+    return workflow, state, layout, RecoveryManager(layout.run_root)
+
+
+def _by_id(plan):
+    return {r["task_id"]: r for r in plan["reconciliations"]}
+
+
+def test_recovery_resets_completed_downstream_of_reset_upstream(tmp_path):
+    workflow, state, layout, manager = make_chain_run(tmp_path)
+
+    plan = manager.create_recovery_plan(workflow, state)
+    recon = _by_id(plan)
+
+    assert recon["a"]["new_status"] == "pending"
+    # direct dependent (depends_on and inputs.from) is reset
+    assert recon["b"]["new_status"] == "pending"
+    assert recon["b"]["reuse"] is False
+    assert recon["b"]["safe"] is True
+    assert "'a'" in recon["b"]["reason"]
+    # transitive: grandchild reset too
+    assert recon["c"]["new_status"] == "pending"
+    assert recon["c"]["reuse"] is False
+    assert "'b'" in recon["c"]["reason"]
+    # independent branch stays reused
+    assert recon["d"]["new_status"] == "completed"
+    assert recon["d"]["reuse"] is True
+    assert plan["can_proceed"] is True
+
+
+def test_recovery_unsafe_downstream_blocks(tmp_path):
+    workflow, state, layout, manager = make_chain_run(
+        tmp_path,
+        b_extra="    side_effects: unsafe\n    idempotency_key: b-key",
+    )
+
+    plan = manager.create_recovery_plan(workflow, state)
+    recon = _by_id(plan)
+
+    assert recon["b"]["new_status"] == "blocked"
+    assert recon["b"]["safe"] is False
+    assert "b" in plan["unsafe_tasks"]
+    assert plan["can_proceed"] is False
+
+
+def test_recovery_apply_clears_artifacts_and_keeps_files(tmp_path):
+    workflow, state, layout, manager = make_chain_run(tmp_path)
+
+    plan = manager.create_recovery_plan(workflow, state)
+    manager.apply_recovery_plan(state, plan)
+
+    for task_id in ("a", "b", "c"):
+        assert state.tasks[task_id].status == TaskStatus.PENDING
+        assert state.tasks[task_id].artifacts == []
+        assert state.tasks[task_id].completed_at is None
+    assert state.tasks["d"].status == TaskStatus.COMPLETED
+    assert state.tasks["d"].artifacts
+    # published files are not deleted
+    assert (layout.run_root / "artifacts" / "b.txt").exists()
+    assert (layout.run_root / "artifacts" / "c.txt").exists()
+
+
+def test_resume_through_controller_reexecutes_downstream(tmp_path):
+    from graph_engine.execution.controller import RunController
+    from graph_engine.execution.result import ExecutionResult
+    from graph_engine.models.enums import ExecutionStatus
+
+    workflow, state, layout, manager = make_chain_run(tmp_path)
+    resumed = manager.resume_workflow()["updated_state"]
+
+    class Executor:
+        name = "mock"
+        adapter = "test"
+
+        def __init__(self):
+            self.tasks = []
+
+        def execute(self, context):
+            self.tasks.append(context.task_id)
+            for path in context.required_outputs.values():
+                target = context.staging_dir / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("regenerated")
+            return ExecutionResult(status=ExecutionStatus.SUCCESS, summary="ok")
+
+        def cancel(self):
+            pass
+
+    executor = Executor()
+
+    class Registry:
+        def get_executor(self, name):
+            return executor
+
+    result = RunController(workflow, layout, resumed, Registry()).run()
+
+    assert result.status == RunStatus.COMPLETED
+    assert executor.tasks == ["a", "b", "c"]
+    assert (layout.run_root / "artifacts" / "b.txt").read_text() == "regenerated"
+    assert result.tasks["d"].status == TaskStatus.COMPLETED
