@@ -33,8 +33,8 @@ def generate_run_id(workflow_id: str) -> str:
 def validate_run_id(run_id: str) -> bool:
     """Check if run ID matches expected format."""
     # Pattern: alphanumeric-dash_TIMESTAMP_hex
-    pattern = r'^[a-zA-Z0-9_-]+-\d{8}T\d{6}Z-[0-9a-f]{6}$'
-    return bool(re.match(pattern, run_id))
+    pattern = r'[a-zA-Z0-9_-]+-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{6}'
+    return bool(re.fullmatch(pattern, run_id))
 
 
 class RunLayout:
