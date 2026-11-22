@@ -32,7 +32,7 @@ updated:
 
 ## Snapshot-проверка
 
-Для источников, которые автоматически не открыть (например, Reddit), владелец сохраняет клиппинг (Markdown с frontmatter `title`, `source`, `author`, `published`; допустимы окончания строк CRLF и BOM). Offline-проверка сверяет строки таблицы с клиппингами и пишет лог:
+Для источников, которые автоматически не открыть (например, Reddit), владелец сохраняет клиппинг (Markdown с frontmatter `title`, `source`, `author`, `published`; допустимы окончания строк CRLF, одиночный CR и BOM). Offline-проверка сверяет строки таблицы с клиппингами и пишет лог:
 
 ```
 python -m pls_evidence verify --evidence <таблица.md> --clippings <каталог> --log <лог.json> [--strict] [--overwrite]

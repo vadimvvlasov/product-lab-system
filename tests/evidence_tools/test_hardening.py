@@ -222,3 +222,76 @@ def test_log_contains_warnings_per_row(clippings_dir, tmp_path):
     main(["verify", "--evidence", str(evidence), "--clippings", str(clippings_dir), "--log", str(log)])
     entry = json.loads(log.read_text(encoding="utf-8"))["results"][0]
     assert any("shorter than 20" in w for w in entry["warnings"])
+
+
+# --- frontmatter values (QA of #33: empty values must not swallow the next line) ---------------
+
+FRONT = '---\ntitle: "t"\nsource: "https://forum.example/x/"\nauthor:\n  - "[[poster_one]]"\npublished: 2026-01-10\ncreated: 2026-02-01\n---\nBody text that is long enough to quote here.\n'
+
+
+def parse(text: str):
+    from pls_evidence.clipping import parse_clipping_text
+
+    return parse_clipping_text(text, Path("x.md"), "0" * 64)
+
+
+def test_empty_source_is_skipped_not_swallowing_next_line():
+    clipping, reason = parse(FRONT.replace('source: "https://forum.example/x/"', "source:"))
+    assert clipping is None
+    assert reason == "no source in frontmatter"
+
+
+def test_empty_source_listed_as_skipped_by_scan(tmp_path):
+    directory = tmp_path / "clips"
+    directory.mkdir()
+    write_clipping(directory, "empty.md", FRONT.replace('source: "https://forum.example/x/"', "source:"))
+    clippings, skipped = scan_clippings(directory)
+    assert clippings == []
+    assert [(s.path.name, s.reason) for s in skipped] == [("empty.md", "no source in frontmatter")]
+
+
+def test_empty_published_and_title_stay_empty():
+    text = FRONT.replace("published: 2026-01-10", "published:").replace('title: "t"', "title:")
+    clipping, _ = parse(text)
+    assert clipping.published == ""
+    assert clipping.title == ""
+    assert clipping.source == "https://forum.example/x/"
+
+
+def test_empty_published_gives_skip_and_warning(tmp_path):
+    directory = tmp_path / "clips"
+    directory.mkdir()
+    write_clipping(directory, "nodate.md", FRONT.replace("published: 2026-01-10", "published:"))
+    row = make_row(url="https://forum.example/x/", excerpt="Body text that is long enough to quote here.", published="2026-01-10")
+    result = verify(directory, row)
+    assert result.status == PASS
+    assert result.fields["published_at"] == SKIP
+    assert any("no date" in w for w in result.warnings)
+
+
+@pytest.mark.parametrize(
+    "author_block",
+    ["author: poster_one # note", "author:\n  - poster_one # note", 'author:\n  - "[[poster_one]]" # note'],
+)
+def test_trailing_yaml_comment_on_author_is_ignored(author_block):
+    clipping, _ = parse(FRONT.replace('author:\n  - "[[poster_one]]"', author_block))
+    assert clipping.author == "poster_one"
+
+
+def test_quoted_scalars_with_escapes_and_fragments():
+    text = FRONT.replace('title: "t"', 'title: "He said \\"hi\\" # not a comment"')
+    clipping, _ = parse(text)
+    assert clipping.title == 'He said "hi" # not a comment'
+    single, _ = parse(FRONT.replace('title: "t"', "title: 'it''s fine'"))
+    assert single.title == "it's fine"
+    fragment, _ = parse(FRONT.replace('source: "https://forum.example/x/"', "source: https://forum.example/x/#frag"))
+    assert fragment.source == "https://forum.example/x/#frag"
+    commented, _ = parse(FRONT.replace('source: "https://forum.example/x/"', "source: https://forum.example/x/ # saved"))
+    assert commented.source == "https://forum.example/x/"
+
+
+def test_lone_cr_line_endings(tmp_path):
+    directory = tmp_path / "clips"
+    directory.mkdir()
+    write_clipping(directory, "cr.md", "", raw=CLIPPING.replace("\n", "\r").encode("utf-8"))
+    assert verify(directory, make_row()).status == PASS

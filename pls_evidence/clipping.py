@@ -104,9 +104,26 @@ class SkippedClipping:
     reason: str
 
 
+_QUOTED = re.compile(r'^"((?:[^"\\]|\\.)*)"')
+_QUOTED_SINGLE = re.compile(r"^'((?:[^']|'')*)'")
+
+
+def _scalar(raw: str) -> str:
+    """Read a one-line YAML-like scalar: quoted text with escapes, or plain text without a trailing comment."""
+    raw = raw.strip()
+    match = _QUOTED.match(raw)
+    if match:
+        return re.sub(r"\\(.)", r"\1", match.group(1))
+    match = _QUOTED_SINGLE.match(raw)
+    if match:
+        return match.group(1).replace("''", "'")
+    return re.sub(r"\s+#.*$", "", raw).strip()
+
+
 def _frontmatter_value(frontmatter: str, key: str) -> str:
-    match = re.search(rf'^{key}:\s*"?(.*?)"?\s*$', frontmatter, re.M)
-    return match.group(1).replace('\\"', '"') if match else ""
+    """Value on the same line as ``key:``; an empty value stays empty (never the next line)."""
+    match = re.search(rf"^{key}:[ \t]*(.*)$", frontmatter, re.M)
+    return _scalar(match.group(1)) if match else ""
 
 
 def _frontmatter_author(frontmatter: str) -> str:
@@ -123,7 +140,7 @@ def _frontmatter_author(frontmatter: str) -> str:
     wikilink = re.search(r"\[\[(.+?)\]\]", value)
     if wikilink:
         return wikilink.group(1)
-    return value.strip().strip('"').strip("'").strip()
+    return _scalar(value)
 
 
 def _parse_comments(section: str) -> list[Comment]:
