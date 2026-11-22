@@ -1,0 +1,399 @@
+{
+  "tool": "pls_evidence verify",
+  "verified_at": "2026-11-22T17:33:35+00:00",
+  "evidence_file": "projects/anti-scope-creep/ideas/evidence-idea-asc-001.md",
+  "clippings_dir": "/home/vadim/Downloads/asc-sweep-2026-11-relevant",
+  "scope": "textual check of excerpt, URL, date and author against a local clipping; does not confirm the claim and does not replace human verification",
+  "summary": {
+    "PASS": 23,
+    "FAIL": 0,
+    "NO_SNAPSHOT": 7
+  },
+  "results": [
+    {
+      "id": "E-001",
+      "status": "PASS",
+      "snapshot": "How do you handle clients asking for 'just one more thing' outside the original scope_.md",
+      "content_hash": "129db84314ba56afc3b3e89e61c576be053abe089698aa08382044454bdb28e4",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-002",
+      "status": "PASS",
+      "snapshot": "how do you handle prospective clients who want to remove standard clauses from your contract_.md",
+      "content_hash": "a5b19cab3dd9c7a8ba1f01f2d5df475d0b71454dbac38047958420d18e652994",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-003",
+      "status": "PASS",
+      "snapshot": "Nightmare Client From Hell - Please Help.md",
+      "content_hash": "663894953dc0862da76eae503ada84d0937d46dbf1fb9c086cf51d687af4e100",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-004",
+      "status": "PASS",
+      "snapshot": "How much feedback is too much.md",
+      "content_hash": "c3db4d3e2e94a8ab27476f8a9150dae622bbb550fd59fc7713e801cc15be1515",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-005",
+      "status": "PASS",
+      "snapshot": "How do you handle out-of-scope work in a proposal before work even starts_.md",
+      "content_hash": "50779c2c5368041ea79fbe13c0859ae8f5cd834ed3666120b361b68c97f59c09",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-006",
+      "status": "PASS",
+      "snapshot": "Is this normal for freelancing or am I being taken advantage of_.md",
+      "content_hash": "e700a7488f09f1ba58e33df61433246de28c90d354b2ad518c684fd3cf3bf5f2",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-007",
+      "status": "PASS",
+      "snapshot": "Startup founder wants me to sign an 8-page contract before telling me what the job is. Is this normal_.md",
+      "content_hash": "9c07b84dc21e998868139882aa17e595fec3837ced4045074bec44dd53ce9fb4",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-008",
+      "status": "PASS",
+      "snapshot": "Legit contract_ Feels like somethings are missing.md",
+      "content_hash": "0c67947b3af9e2a7366b4ece3a3c9f5c6f16169f7d6ee6056afcaf2d2e442fb1",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-009",
+      "status": "PASS",
+      "snapshot": "Microsoft Word Contract.md",
+      "content_hash": "1563a55c94bc3a97db80497035e8763a2a495e87caf592134d09c81558c1b2a9",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-010",
+      "status": "PASS",
+      "snapshot": "Client not releasing payment, project submitted in full.md",
+      "content_hash": "9d2f57da7e75a770603c057c7c1b56afe3e9d5c5eeb0215659ff429b27dd397d",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-011",
+      "status": "PASS",
+      "snapshot": "Client owes me $250 after I completed their website. Would you take the loss or pursue payment_.md",
+      "content_hash": "eaa8f436a23b445a4e14e0ab2cc5cdb9caffc1cf76bce1de2b63c9ffc6e4d76c",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-012",
+      "status": "PASS",
+      "snapshot": "Looking for advice after a payment dispute with a client.md",
+      "content_hash": "8a3a7acf48120c0791cae93d8ce27e76e7767df0913121e6e1c54893ea790246",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-013",
+      "status": "PASS",
+      "snapshot": "How should i handle a client who keeps responding to everything but doesn't sign my contract agreement or pay an advance_.md",
+      "content_hash": "d5741cb30d3c9738dc9a9b228d01d19ee7f422b4f1d1c57058af601fe5b67612",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-014",
+      "status": "PASS",
+      "snapshot": "Client wants to change pricing.md",
+      "content_hash": "b09703fce6e10c5fbbd16560d370febb1444207d2619f1c9762dc8a840ba672e",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-015",
+      "status": "PASS",
+      "snapshot": "Getting Client to Sign MSA and SOW.md",
+      "content_hash": "71062c2e1e9dc5e247f7f7b17c682ddd8890a48ef75986860aec27cb5be18a13",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-016",
+      "status": "PASS",
+      "snapshot": "Laid off and then hired back as a 1099 contractor - how to deal with the mess_.md",
+      "content_hash": "5f3fe75016cca5f832504ffa3f1db665340db1643c4e925562da9c8a5ab79287",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-017",
+      "status": "PASS",
+      "snapshot": "Ex-client and her husband are harassing my family at work over expired files—looking for advice on next steps.md",
+      "content_hash": "ed2ea2ca7b043a7418c69a4bb2d5cf5cf256cee5ad26f032fa8331f5e95ece41",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-018",
+      "status": "NO_SNAPSHOT",
+      "snapshot": "",
+      "content_hash": "",
+      "found_in": "",
+      "fields": {},
+      "note": "no clipping with this source_url"
+    },
+    {
+      "id": "E-019",
+      "status": "PASS",
+      "snapshot": "What's the Worst Contract You've Ever Signed__.md",
+      "content_hash": "d25fa09ed27f7f5e594a03b7779db6db11ee60e697b3135c3452a692bcd02427",
+      "found_in": "post",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-020",
+      "status": "NO_SNAPSHOT",
+      "snapshot": "",
+      "content_hash": "",
+      "found_in": "",
+      "fields": {},
+      "note": "no clipping with this source_url"
+    },
+    {
+      "id": "E-021",
+      "status": "NO_SNAPSHOT",
+      "snapshot": "",
+      "content_hash": "",
+      "found_in": "",
+      "fields": {},
+      "note": "no clipping with this source_url"
+    },
+    {
+      "id": "E-022",
+      "status": "NO_SNAPSHOT",
+      "snapshot": "",
+      "content_hash": "",
+      "found_in": "",
+      "fields": {},
+      "note": "no clipping with this source_url"
+    },
+    {
+      "id": "E-023",
+      "status": "NO_SNAPSHOT",
+      "snapshot": "",
+      "content_hash": "",
+      "found_in": "",
+      "fields": {},
+      "note": "no clipping with this source_url"
+    },
+    {
+      "id": "E-024",
+      "status": "NO_SNAPSHOT",
+      "snapshot": "",
+      "content_hash": "",
+      "found_in": "",
+      "fields": {},
+      "note": "no clipping with this source_url"
+    },
+    {
+      "id": "E-025",
+      "status": "PASS",
+      "snapshot": "Clauses I wish someone had warned me about before I signed my first freelance contracts.md",
+      "content_hash": "08b4bdcb52dfba59a4954d78f6350607d720001f7777192f0ef208efbe306828",
+      "found_in": "comment",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-026",
+      "status": "PASS",
+      "snapshot": "Clauses I wish someone had warned me about before I signed my first freelance contracts.md",
+      "content_hash": "08b4bdcb52dfba59a4954d78f6350607d720001f7777192f0ef208efbe306828",
+      "found_in": "comment",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-027",
+      "status": "PASS",
+      "snapshot": "How do you handle clients asking for 'just one more thing' outside the original scope_.md",
+      "content_hash": "129db84314ba56afc3b3e89e61c576be053abe089698aa08382044454bdb28e4",
+      "found_in": "comment",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-028",
+      "status": "PASS",
+      "snapshot": "how do you handle prospective clients who want to remove standard clauses from your contract_.md",
+      "content_hash": "a5b19cab3dd9c7a8ba1f01f2d5df475d0b71454dbac38047958420d18e652994",
+      "found_in": "comment",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-029",
+      "status": "PASS",
+      "snapshot": "Client not releasing payment, project submitted in full.md",
+      "content_hash": "9d2f57da7e75a770603c057c7c1b56afe3e9d5c5eeb0215659ff429b27dd397d",
+      "found_in": "comment",
+      "fields": {
+        "source_url": "PASS",
+        "verbatim_excerpt": "PASS",
+        "published_at": "PASS",
+        "author_id": "PASS"
+      },
+      "note": ""
+    },
+    {
+      "id": "E-030",
+      "status": "NO_SNAPSHOT",
+      "snapshot": "",
+      "content_hash": "",
+      "found_in": "",
+      "fields": {},
+      "note": "no clipping with this source_url"
+    }
+  ]
+}
