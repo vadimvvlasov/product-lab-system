@@ -1,6 +1,33 @@
 """Executor resolution and unused resource warnings."""
 
+from graph_engine.env_refs import env_ref_error
 from graph_engine.models.workflow import WorkflowDefinition
+
+
+def validate_executor_env_refs(workflow: WorkflowDefinition) -> list[str]:
+    """
+    Check every string in executors.*.config that starts with `env:`.
+
+    Applies to all keys (secret or not), at any depth. Mapping keys and
+    non-string values are not checked. Returns a list of error messages.
+    """
+    errors: list[str] = []
+    for name, executor in workflow.executors.items():
+        _walk_env_refs(executor.config, "", f"executor '{name}'", errors)
+    return errors
+
+
+def _walk_env_refs(value, path: str, owner: str, errors: list[str]) -> None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _walk_env_refs(item, f"{path}.{key}" if path else str(key), owner, errors)
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            _walk_env_refs(item, f"{path}[{index}]", owner, errors)
+    else:
+        error = env_ref_error(value)
+        if error:
+            errors.append(f"{owner} config '{path}': {error}")
 
 
 def resolve_executor(workflow: WorkflowDefinition, task_id: str) -> str:

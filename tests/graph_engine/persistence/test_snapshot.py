@@ -184,3 +184,46 @@ def test_nested_ssh_key_rejects_literal_without_writing(tmp_path):
         snapshot_executor_config(workflow, target)
 
     assert not target.exists()
+
+
+BAD_NAMES = [
+    "env:FOO BAR", "env:1X", "env: DB_PWD", "env:DB_PWD ", "env:A=B", "env:$HOME",
+    "env:a/b", "env:A-B", "env:A.B", "env:ПАРОЛЬ",
+]
+
+
+@pytest.mark.parametrize("value", BAD_NAMES)
+@pytest.mark.parametrize("key", ["api_key", "base_url"])
+def test_malformed_env_reference_rejected_and_not_written(tmp_path, key, value):
+    workflow = make_workflow(f"{key}: {value!r}")
+    target = tmp_path / "executor_config.json"
+
+    with pytest.raises(ExecutorError, match="environment variable name"):
+        snapshot_executor_config(workflow, target)
+
+    assert not target.exists()
+
+
+def test_malformed_env_reference_nested_and_list_rejected(tmp_path):
+    workflow = make_workflow("hosts:\n  - env:OK\n  - env:a b")
+    with pytest.raises(ExecutorError, match="environment variable name"):
+        snapshot_executor_config(workflow, tmp_path / "executor_config.json")
+
+
+def test_trailing_newline_env_reference_rejected(tmp_path):
+    workflow = make_workflow('base_url: "env:HOST\\n"')
+    with pytest.raises(ExecutorError, match="environment variable name"):
+        snapshot_executor_config(workflow, tmp_path / "executor_config.json")
+
+
+@pytest.mark.parametrize("name", ["env:OPENAI_API_KEY", "env:DB_PWD", "env:_X", "env:a1"])
+@pytest.mark.parametrize("key", ["api_key", "base_url"])
+def test_valid_env_names_stored_verbatim(tmp_path, key, name):
+    import json
+
+    workflow = make_workflow(f"{key}: {name}")
+    target = tmp_path / "executor_config.json"
+
+    snapshot_executor_config(workflow, target)
+
+    assert json.loads(target.read_text())["worker"]["config"][key] == name

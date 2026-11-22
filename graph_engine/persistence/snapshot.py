@@ -5,6 +5,7 @@ import json
 import re
 from pathlib import Path
 
+from graph_engine.env_refs import env_ref_error, is_env_ref
 from graph_engine.errors import ExecutorError
 from graph_engine.models.workflow import WorkflowDefinition
 
@@ -72,31 +73,28 @@ def _normalize_config(config: dict) -> dict:
     normalized = {}
     for key, value in config.items():
         if _looks_secret(key):
-            if (
-                isinstance(value, str)
-                and value.startswith("env:")
-                and value[4:].strip()
-            ):
-                normalized[key] = value
-                continue
+            if is_env_ref(value):
+                error = env_ref_error(value)
+                if error is None:
+                    normalized[key] = value
+                    continue
+                raise ExecutorError(f"executor config key '{key}': {error}")
             raise ExecutorError(
                 f"executor config key '{key}' looks secret; use env:NAME instead "
                 "of a literal value"
             )
-        if isinstance(value, dict):
-            normalized[key] = _normalize_config(value)
-        elif isinstance(value, list):
-            normalized[key] = [_normalize_value(item) for item in value]
-        else:
-            normalized[key] = value
+        normalized[key] = _normalize_value(value, key)
     return normalized
 
 
-def _normalize_value(value):
+def _normalize_value(value, key: str = ""):
     if isinstance(value, dict):
         return _normalize_config(value)
     if isinstance(value, list):
-        return [_normalize_value(item) for item in value]
+        return [_normalize_value(item, key) for item in value]
+    error = env_ref_error(value)
+    if error:
+        raise ExecutorError(f"executor config key '{key}': {error}")
     return value
 
 
