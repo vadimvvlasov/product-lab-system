@@ -102,7 +102,9 @@ _SECRET_KEY = re.compile(
 
 
 def _looks_secret(key: str) -> bool:
-    snake = re.sub(r"(?<!^)(?=[A-Z])", "_", key).lower()
+    # Split camelCase at lower->upper boundaries only, so UPPER_CASE keys such
+    # as API_KEY stay intact instead of becoming a_p_i__k_e_y.
+    snake = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", key).replace("-", "_").lower()
     return bool(_SECRET_KEY.search(snake))
 
 

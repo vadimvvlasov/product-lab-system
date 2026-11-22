@@ -2,12 +2,12 @@
 
 import re
 
-SAFE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
+SAFE_ID_PATTERN = re.compile(r"[a-zA-Z0-9_-]+")
 
 
 def is_safe_id(value: object) -> bool:
     """Return True when value is a non-empty filesystem-safe identifier."""
-    return isinstance(value, str) and bool(SAFE_ID_PATTERN.match(value))
+    return isinstance(value, str) and bool(SAFE_ID_PATTERN.fullmatch(value))
 
 
 def require_safe_id(value: object, kind: str = "id") -> str:

@@ -25,7 +25,7 @@ def test_approval_requires_real_boolean(tmp_path):
         store.record_approval("task-a", "false")
 
 
-@pytest.mark.parametrize("task_id", ["../escape", "a/b", "", "a b"])
+@pytest.mark.parametrize("task_id", ["../escape", "a/b", "", "a b", "a\n"])
 def test_rejects_unsafe_task_ids(tmp_path, task_id):
     store = ApprovalStore(tmp_path)
 
