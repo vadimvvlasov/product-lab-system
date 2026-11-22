@@ -16,6 +16,8 @@ from typing import Callable
 
 from pls_evidence.clipping import (
     Clipping,
+    SkippedClipping,
+    date_part,
     normalize,
     normalize_name,
     normalize_url,
@@ -27,6 +29,9 @@ SKIP = "SKIP"
 NO_SNAPSHOT = "NO_SNAPSHOT"
 
 _UNKNOWN = {"", "unknown", "n/a", "-"}
+
+# Excerpts shorter than this many normalized characters get a warning (status is unchanged).
+MIN_EXCERPT_CHARS = 20
 
 
 @dataclass
@@ -45,6 +50,7 @@ class RowResult:
     found_in: str = ""
     fields: dict[str, str] = field(default_factory=dict)
     note: str = ""
+    warnings: list[str] = field(default_factory=list)
 
 
 def _locations(clipping: Clipping, excerpt: str) -> list[Location]:
@@ -57,23 +63,43 @@ def _locations(clipping: Clipping, excerpt: str) -> list[Location]:
     return found
 
 
-def _compare(row_value: str, actual: str, *, name: bool = False) -> str:
-    if row_value.strip().lower() in _UNKNOWN:
+def _compare(row_value: str, actual: str, *, name: bool = False, date: bool = False) -> str:
+    """PASS / FAIL, or SKIP when the row value is unknown or the clipping has no value."""
+    if row_value.strip().lower() in _UNKNOWN or not actual.strip():
         return SKIP
     if name:
         return PASS if normalize_name(row_value) == normalize_name(actual) else FAIL
+    if date:
+        return PASS if date_part(row_value) == date_part(actual) else FAIL
     return PASS if row_value.strip() == actual.strip() else FAIL
 
 
 def _check_location(row: dict[str, str], location: Location) -> dict[str, str]:
     return {
-        "published_at": _compare(row.get("published_at", ""), location.date),
+        "published_at": _compare(row.get("published_at", ""), location.date, date=True),
         "author_id": _compare(row.get("author_id", ""), location.author, name=True),
     }
 
 
+def _location_warnings(row: dict[str, str], location: Location, fields: dict[str, str]) -> list[str]:
+    warnings: list[str] = []
+    if fields["author_id"] == SKIP and row.get("author_id", "").strip().lower() not in _UNKNOWN:
+        warnings.append("clipping has no author: author_id not checked")
+    if fields["published_at"] == SKIP and row.get("published_at", "").strip().lower() not in _UNKNOWN:
+        warnings.append("clipping has no date: published_at not checked")
+    return warnings
+
+
 def verify_row(row: dict[str, str], clippings: list[Clipping]) -> RowResult:
     """Verify a single evidence row against the loaded clippings."""
+    result = _verify_row(row, clippings)
+    excerpt = normalize(row.get("verbatim_excerpt", ""))
+    if excerpt and len(excerpt) < MIN_EXCERPT_CHARS:
+        result.warnings.append(f"excerpt shorter than {MIN_EXCERPT_CHARS} characters")
+    return result
+
+
+def _verify_row(row: dict[str, str], clippings: list[Clipping]) -> RowResult:
     row_id = row.get("id", "")
     excerpt = normalize(row.get("verbatim_excerpt", ""))
     url = normalize_url(row.get("source_url", ""))
@@ -112,6 +138,7 @@ def verify_row(row: dict[str, str], clippings: list[Clipping]) -> RowResult:
                 content_hash=clipping.content_hash,
                 found_in=location.kind,
                 fields=fields,
+                warnings=_location_warnings(row, location, fields),
             )
             if status == PASS:
                 return result
@@ -152,6 +179,7 @@ def write_log(
     evidence_path: Path,
     clippings_dir: Path,
     results: list[RowResult],
+    skipped: list[SkippedClipping] | None = None,
     overwrite: bool = False,
     clock: Callable[[], str] = _utc_now,
 ) -> None:
@@ -171,6 +199,7 @@ def write_log(
         "scope": "textual check of excerpt, URL, date and author against a local clipping; "
         "does not confirm the claim and does not replace human verification",
         "summary": summarize(results),
+        "skipped_clippings": [{"file": str(s.path), "reason": s.reason} for s in (skipped or [])],
         "results": [
             {
                 "id": r.id,
@@ -179,6 +208,7 @@ def write_log(
                 "content_hash": r.content_hash,
                 "found_in": r.found_in,
                 "fields": r.fields,
+                "warnings": r.warnings,
                 "note": r.note,
             }
             for r in results
