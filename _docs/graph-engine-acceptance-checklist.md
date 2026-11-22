@@ -4,9 +4,9 @@
 adapters are out of scope. Independent QA is pending.
 
 **Date:** 2026-11-22  
-**Branch:** `issue/21-verification-time-timeout`  
+**Branch:** `issue/22-secret-keys-access-ssh`  
 **Base:** `main` (includes #17 via #19 and #18 via #20)  
-**Code under test:** branch tip (QA records the reviewed SHA in issue #21)  
+**Code under test:** branch tip (QA records the reviewed SHA in issue #22)  
 **Version:** 0.1.0
 
 This is the only current status document. It replaces the earlier
@@ -56,12 +56,12 @@ Command:
 python3 -m pytest tests/graph_engine
 ```
 
-Result at the branch tip: **216 passed** (0 failed, 0 skipped).
+Result at the branch tip: **244 passed** (0 failed, 0 skipped).
 
 | Area | Tests |
 |---|---:|
 | `unit/` (parser, schema, references, DAG) | 27 |
-| `persistence/` | 70 |
+| `persistence/` | 98 |
 | `artifacts/` | 10 |
 | `executors/` | 8 |
 | `execution/` (controller E2E) | 23 |
@@ -70,7 +70,7 @@ Result at the branch tip: **216 passed** (0 failed, 0 skipped).
 | `recovery/` | 35 |
 | `cli/` | 8 |
 | `test_api.py` | 4 |
-| **Total** | **216** |
+| **Total** | **244** |
 
 The end-to-end tests use real `RunStore`, `RunLayout` and the run controller.
 `tests/graph_engine/test_api.py`, the CLI tests, and one `AgentVerifier` test
@@ -236,7 +236,7 @@ python3 -m graph_engine.cli.main validate \
   tests/graph_engine/fixtures/workflows/valid-simple.yaml
 ```
 
-Record in issue #21: verdict, evidence, reviewed SHA, and limitations. Do not
+Record in issue #22: verdict, evidence, reviewed SHA, and limitations. Do not
 push, merge, tag, deploy, or close the issue without explicit owner approval.
 
 ---
