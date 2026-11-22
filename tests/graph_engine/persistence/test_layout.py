@@ -20,6 +20,19 @@ def test_validate_run_id():
     assert not validate_run_id("no-timestamp")
 
 
+@pytest.mark.parametrize(
+    "run_id",
+    [
+        "wf-20261031T123456Z-abc123\n",
+        "\nwf-20261031T123456Z-abc123",
+        "wf-20261031T123456Z-abc123 ",
+        "wf-\u0662\u0660\u0662\u0666\u0661\u0660\u0663\u0661T123456Z-abc123",
+    ],
+)
+def test_validate_run_id_rejects_inexact_ids(run_id):
+    assert not validate_run_id(run_id)
+
+
 def test_run_layout_paths(temp_dir):
     """Layout paths are correct."""
     layout = RunLayout(temp_dir, "wf-20261031T000000Z-abc123")

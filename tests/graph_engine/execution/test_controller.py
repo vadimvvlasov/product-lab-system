@@ -1,5 +1,7 @@
 """End-to-end tests for the run controller."""
 
+import pytest
+
 from graph_engine.execution.controller import RunController
 from graph_engine.execution.result import ExecutionResult
 from graph_engine.models.enums import ExecutionStatus, RunStatus, TaskStatus
@@ -235,3 +237,149 @@ def test_controller_fails_on_run_timeout(tmp_path):
 
     assert result.status == RunStatus.FAILED
     assert executor.calls == []
+
+
+class ContentExecutor(ScriptedExecutor):
+    """Writes per-call content so verification can pass or fail by attempt."""
+
+    def __init__(self, contents):
+        super().__init__([success()])
+        self.contents = contents
+
+    def execute(self, context):
+        self.calls.append(context)
+        content = self.contents[min(len(self.calls) - 1, len(self.contents) - 1)]
+        for path in context.required_outputs.values():
+            target = context.staging_dir / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content)
+        return success()
+
+
+def _attempt(layout, task_id, number):
+    import json
+
+    path = layout.run_root / "tasks" / task_id / "attempts" / f"{number:03d}.json"
+    return json.loads(path.read_text())
+
+
+def test_controller_retries_after_verification_failure(tmp_path):
+    workflow_yaml = WORKFLOW.replace(
+        "test -f artifacts/a.txt", "grep -q ok artifacts/a.txt"
+    )
+    workflow, state, layout = make_run(tmp_path, workflow_yaml)
+    executor = ContentExecutor(["bad content", "ok content"])
+
+    result = RunController(
+        workflow, layout, state, DictRegistry({"worker": executor})
+    ).run()
+
+    assert result.status == RunStatus.COMPLETED
+    # task-a twice (verification failed once), task-b once
+    assert [c.task_id for c in executor.calls] == ["task-a", "task-a", "task-b"]
+    second = executor.calls[1]
+    assert second.attempt_number == 2
+    assert second.retry_feedback is not None
+    assert second.retry_feedback.failures
+    assert any("check" in f for f in second.retry_feedback.failures)
+    assert _attempt(layout, "task-a", 1)["status"] == "failed"
+
+
+def test_verification_failure_with_artifacts_present_has_no_missing(tmp_path, monkeypatch):
+    from graph_engine.execution import controller as controller_module
+
+    seen = []
+    real = controller_module.build_retry_feedback
+
+    def spy(attempt, results, missing):
+        seen.append(list(missing))
+        return real(attempt, results, missing)
+
+    monkeypatch.setattr(controller_module, "build_retry_feedback", spy)
+    workflow_yaml = WORKFLOW.replace(
+        "test -f artifacts/a.txt", "grep -q ok artifacts/a.txt"
+    )
+    workflow, state, layout = make_run(tmp_path, workflow_yaml)
+    executor = ContentExecutor(["bad content", "ok content"])
+
+    RunController(workflow, layout, state, DictRegistry({"worker": executor})).run()
+
+    assert seen == [[]]
+    assert _attempt(layout, "task-a", 1)["retry_feedback"]["missing_artifacts"] == []
+    assert executor.calls[1].retry_feedback.missing_artifacts == []
+
+
+def test_verification_removing_output_lists_only_that_output(tmp_path):
+    workflow_yaml = WORKFLOW.replace(
+        'command: "test -f artifacts/a.txt"',
+        "command: \"sh -c 'rm artifacts/a.txt; false'\"",
+    )
+    workflow, state, layout = make_run(tmp_path, workflow_yaml)
+    executor = ScriptedExecutor([success()])
+
+    RunController(workflow, layout, state, DictRegistry({"worker": executor})).run()
+
+    assert _attempt(layout, "task-a", 1)["retry_feedback"]["missing_artifacts"] == ["out"]
+    assert executor.calls[1].retry_feedback.missing_artifacts == ["out"]
+
+
+class _FakeTime:
+    def __init__(self, values):
+        self.values = iter(values)
+
+    def monotonic(self):
+        return next(self.values)
+
+
+def test_subsecond_tasks_accumulate_active_execution_seconds(tmp_path, monkeypatch):
+    from graph_engine.execution import controller as controller_module
+
+    workflow, state, layout = make_run(tmp_path)
+    monkeypatch.setattr(
+        controller_module, "time", _FakeTime([0.0, 0.4, 0.4, 0.8])
+    )
+    executor = ScriptedExecutor([success(), success()])
+
+    result = RunController(
+        workflow, layout, state, DictRegistry({"worker": executor})
+    ).run()
+
+    assert result.status == RunStatus.COMPLETED
+    assert result.active_execution_seconds == pytest.approx(0.8)
+
+    from graph_engine.persistence import load_run_state
+
+    loaded = load_run_state(layout)
+    assert isinstance(loaded.active_execution_seconds, float)
+    assert loaded.active_execution_seconds == pytest.approx(0.8)
+
+
+def test_crashed_executor_accumulates_elapsed_time(tmp_path, monkeypatch):
+    from graph_engine.execution import controller as controller_module
+
+    class Crashing(ScriptedExecutor):
+        def execute(self, context):
+            raise RuntimeError("boom")
+
+    workflow, state, layout = make_run(tmp_path)
+    monkeypatch.setattr(
+        controller_module, "time", _FakeTime([10.0, 10.25, 10.25, 10.5])
+    )
+    RunController(
+        workflow, layout, state, DictRegistry({"worker": Crashing([success()])})
+    ).run()
+
+    assert state.active_execution_seconds == pytest.approx(0.5)
+
+
+def test_run_state_loads_integer_active_execution_seconds(tmp_path):
+    from graph_engine.models.run import RunState
+
+    workflow, state, layout = make_run(tmp_path)
+    data = state.to_dict()
+    data["active_execution_seconds"] = 7
+
+    loaded = RunState.from_dict(data)
+
+    assert loaded.active_execution_seconds == 7.0
+    assert isinstance(loaded.active_execution_seconds, float)

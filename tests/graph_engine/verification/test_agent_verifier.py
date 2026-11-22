@@ -228,3 +228,59 @@ def test_agent_verifier_does_not_see_implementer_transcript(
     assert context.retry_feedback is None
     # Goal comes from acceptance_criteria, not implementer
     assert "independent review" in context.goal.lower()
+
+
+REAL_REGISTRY_WORKFLOW = b"""
+version: "1"
+workflow:
+  id: agent-real-registry
+  description: Agent verifier with the real registry
+execution:
+  max_concurrency: 1
+  max_retries: 0
+executors:
+  pass_reviewer:
+    adapter: mock
+    config:
+      status: success
+      summary: Looks good
+  fail_reviewer:
+    adapter: mock
+    config:
+      status: failure
+      summary: Review failed
+      error: Issues found
+executor_mapping:
+  work: pass_reviewer
+tasks:
+  - id: task1
+    type: work
+    verification:
+      - id: ok-review
+        method: agent
+        executor: pass_reviewer
+        acceptance_criteria: Check quality
+      - id: bad-review
+        method: agent
+        executor: fail_reviewer
+        acceptance_criteria: Check quality
+"""
+
+
+def test_agent_verifier_with_real_registry_pass_and_fail(temp_staging):
+    from graph_engine.executors.registry import ExecutorRegistry
+    from graph_engine.parser import parse_workflow
+
+    workflow = parse_workflow(REAL_REGISTRY_WORKFLOW)
+    registry = ExecutorRegistry(workflow)
+    verifier = AgentVerifier(registry)
+    context = {"task_id": "task1", "input_artifacts": {}, "required_outputs": {}}
+
+    outcomes = {}
+    for criterion in workflow.tasks[0].verification:
+        outcomes[criterion.id] = verifier.verify(criterion, temp_staging, context)
+
+    assert outcomes["ok-review"].status == VerificationStatus.PASS
+    assert outcomes["bad-review"].status == VerificationStatus.FAIL
+    assert registry.get_executor("pass_reviewer").call_count == 1
+    assert registry.get_executor("fail_reviewer").call_count == 1

@@ -200,3 +200,52 @@ tasks:
     
     assert "task-b" not in plan.ready
     assert "task-b" in plan.blocked
+
+
+def test_verifying_task_occupies_concurrency_slot():
+    """A VERIFYING task counts toward max_concurrency like a RUNNING one."""
+    workflow_yaml = b"""
+version: "1"
+workflow:
+  id: test
+  description: Test
+execution:
+  max_concurrency: 1
+  max_retries: 0
+executors:
+  mock:
+    adapter: mock
+    config: {}
+executor_mapping: {}
+tasks:
+  - id: task-a
+    type: test
+    executor: mock
+    verification:
+      - id: check
+        method: command
+        command: "true"
+  - id: task-b
+    type: test
+    executor: mock
+    verification:
+      - id: check
+        method: command
+        command: "true"
+"""
+    workflow = parse_workflow(workflow_yaml)
+    run_state = RunState(
+        schema_version="1",
+        run_id="test-run",
+        workflow_id="test",
+        status="running",
+        created_at="2026-10-31T00:00:00Z",
+        tasks={
+            "task-a": TaskState(task_id="task-a", status=TaskStatus.VERIFYING),
+            "task-b": TaskState(task_id="task-b", status=TaskStatus.PENDING),
+        },
+    )
+
+    plan = compute_ready_tasks(workflow, run_state, 1)
+
+    assert plan.ready == []

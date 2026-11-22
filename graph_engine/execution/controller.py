@@ -166,7 +166,7 @@ class RunController:
         try:
             result = executor.execute(context)
         except Exception as exc:  # noqa: BLE001 - adapter errors become failures
-            self.state.active_execution_seconds += int(time.monotonic() - started)
+            self._add_execution_time(started)
             self._retry_or_block(
                 task,
                 task_state,
@@ -177,7 +177,7 @@ class RunController:
             )
             return
 
-        self.state.active_execution_seconds += int(time.monotonic() - started)
+        self._add_execution_time(started)
 
         result_errors = validate_result(result)
         if result_errors:
@@ -272,7 +272,7 @@ class RunController:
             feedback = build_retry_feedback(
                 attempt,
                 results,
-                [out.name for out in task.outputs],
+                self._invalid_output_names(task, staging),
             )
             self._retry_or_block(
                 task,
@@ -315,6 +315,16 @@ class RunController:
         for record in records:
             staged = staging / record["path"]
             self.artifacts.publish_artifact(staged, record["path"])
+
+    def _invalid_output_names(self, task: TaskDefinition, staging: Path) -> list[str]:
+        """Names of declared outputs that are missing or invalid in staging."""
+        names = []
+        for output in task.outputs:
+            try:
+                self.artifacts.validate_output(output.path, staging, output.min_bytes)
+            except ArtifactError:
+                names.append(output.name)
+        return names
 
     def _validate_outputs(self, task: TaskDefinition, staging: Path) -> list | None:
         records = []
@@ -461,6 +471,9 @@ class RunController:
         self._persist()
         self._emit("run_failed", reason=reason)
         return self.state
+
+    def _add_execution_time(self, started: float) -> None:
+        self.state.active_execution_seconds += time.monotonic() - started
 
     def _timeout_exceeded(self) -> bool:
         limit = self.state.max_run_duration_minutes
