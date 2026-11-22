@@ -4,8 +4,8 @@
 
 ## Сделать по порядку
 
-- [ ] Открыть в Obsidian `registry.base` и `leads.base` — проверить, что виды открываются без ошибок (синтаксис Bases не проверялся).
-- [ ] Вписать 1–3 сегмента в § Сегменты в ротации в [inbox](inbox.md).
+- [x] Открыть в Obsidian `registry.base` и `leads.base` — проверить, что виды открываются без ошибок (синтаксис Bases не проверялся).
+- [x] Вписать 1–3 сегмента в § Сегменты в ротации в [inbox](inbox.md).
 - [ ] Задать `timebox_hours`, порог продолжения и порог остановки в [EXP-ASC-004](projects/anti-scope-creep/experiments/exp-asc-004-outreach.md) и [EXP-ASC-010](projects/anti-scope-creep/experiments/exp-asc-010-segment-agencies.md).
 - [ ] Провести первый sweep ([10-discover](system/10-discover.md), § Sweep) — можно попросить Claude: «проведи sweep по сегментам из inbox.md». Результат: 20 лидов в `projects/anti-scope-creep/leads/`.
 - [ ] Запустить outreach EXP-ASC-004: 20 контактов, не больше 10 сообщений в день.
