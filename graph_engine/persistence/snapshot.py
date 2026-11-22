@@ -101,7 +101,7 @@ def _normalize_value(value):
 
 
 _SECRET_KEY = re.compile(
-    r"(^|_)(api_key|apikey|private_key|token|secret|secret_key|password|passwd|pwd|credential|authorization)$"
+    r"(^|_)(api_key|apikey|private_key|access_key|accesskey|ssh_key|sshkey|token|secret|secret_key|password|passwd|pwd|credential|authorization)$"
 )
 
 
