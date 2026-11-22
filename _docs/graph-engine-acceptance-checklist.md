@@ -3,7 +3,7 @@
 **Status:** Implemented through Stage 7 with mock executors. Stage 8 real
 adapters are out of scope. Independent QA is pending.
 
-**Date:** 2026-11-01  
+**Date:** 2026-11-22  
 **Branch:** `issue/17-graph-engine-integrity`  
 **Base:** `feat/graph-engine-stages-5-8` (not `main`; the Stage 5-6 code under
 repair is not on `main`)  
@@ -56,13 +56,13 @@ Command:
 python3 -m pytest tests/graph_engine
 ```
 
-Result at the branch tip: **144 passed** (0 failed, 0 skipped).
+Result at the branch tip: **153 passed** (0 failed, 0 skipped).
 
 | Area | Tests |
 |---|---:|
-| `unit/` (parser, schema, references, DAG) | 25 |
-| `persistence/` | 24 |
-| `artifacts/` | 7 |
+| `unit/` (parser, schema, references, DAG) | 27 |
+| `persistence/` | 28 |
+| `artifacts/` | 10 |
 | `executors/` | 8 |
 | `execution/` (controller E2E) | 11 |
 | `scheduler/` | 4 |
@@ -70,7 +70,7 @@ Result at the branch tip: **144 passed** (0 failed, 0 skipped).
 | `recovery/` | 31 |
 | `cli/` | 5 |
 | `test_api.py` | 4 |
-| **Total** | **144** |
+| **Total** | **153** |
 
 The end-to-end tests use real `RunStore`, `RunLayout`, `ExecutorRegistry`, and
 the run controller. They cover run → verify → retry → complete, approval
@@ -181,7 +181,7 @@ documented limit; DEFERRED = not implemented.
 | AC | Requirement | Status | Evidence |
 |---|---|---|---|
 | J1 | `validate`, `run`, `status`, `resume`, `cancel` work | PASS | CLI tests; `approve` and `reject` also work |
-| J2 | Unit tests pass | PASS | 25 unit tests |
+| J2 | Unit tests pass | PASS | 27 unit tests |
 | J3 | Scheduler tests pass | PASS | 4 tests |
 | J4 | Recovery tests pass | PASS | 31 tests |
 | J5 | End-to-end test passes | PASS | Controller, API, and CLI E2E |
