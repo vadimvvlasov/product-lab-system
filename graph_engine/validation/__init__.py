@@ -1,7 +1,11 @@
 """Workflow validation."""
 
 from graph_engine.validation.dag import validate_dag
-from graph_engine.validation.executors import check_unused_resources, resolve_executor
+from graph_engine.validation.executors import (
+    check_unused_resources,
+    resolve_executor,
+    validate_executor_env_refs,
+)
 from graph_engine.validation.references import validate_references
 from graph_engine.validation.report import ValidationReport
 from graph_engine.validation.schema import validate_schema
@@ -21,6 +25,7 @@ def validate_workflow(workflow) -> ValidationReport:
     
     # Schema validation
     report.errors.extend(validate_schema(workflow))
+    report.errors.extend(validate_executor_env_refs(workflow))
     
     # Reference validation
     report.errors.extend(validate_references(workflow))
@@ -51,4 +56,5 @@ __all__ = [
     "validate_dag",
     "resolve_executor",
     "check_unused_resources",
+    "validate_executor_env_refs",
 ]
