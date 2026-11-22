@@ -24,7 +24,7 @@
 | Deliver | **Build** минимальный путь, проверяющий гипотезу, а не весь продукт | [40-deliver](40-deliver.md) |
 | Experiment | **Expose** — привести релевантных пользователей (посты, сообщества, личные обращения, SEO, существующая аудитория) → **Observe** реальное использование, а не реакции → **Decide** и записать урок → **Reuse** выводы и компоненты в следующей итерации или другом проекте | [30-experiment](30-experiment.md) |
 
-Расширения подключаются к стадиям, не меняя ядро: [LLM-assisted research](modules/llm-research.md) — к Discover/Screen, [LLM evaluation data](modules/llm-eval-data.md) — к экспериментам `method: quality`.
+Расширения подключаются к стадиям, не меняя ядро: [LLM-assisted research](modules/llm-research.md) и [Competitor scan](modules/competitor-scan.md) — к Discover/Screen, [LLM evaluation data](modules/llm-eval-data.md) — к экспериментам `method: quality`.
 
 ## Словарь
 
