@@ -4,10 +4,9 @@
 adapters are out of scope. Independent QA is pending.
 
 **Date:** 2026-11-22  
-**Branch:** `issue/17-graph-engine-integrity`  
-**Base:** `feat/graph-engine-stages-5-8` (not `main`; the Stage 5-6 code under
-repair is not on `main`)  
-**Code under test:** branch tip (QA records the reviewed SHA in issue #17)  
+**Branch:** `issue/18-graph-engine-qa-followups`  
+**Base:** `main` (includes the #17 work merged via #19)  
+**Code under test:** branch tip (QA records the reviewed SHA in issue #18)  
 **Version:** 0.1.0
 
 This is the only current status document. It replaces the earlier
@@ -56,28 +55,27 @@ Command:
 python3 -m pytest tests/graph_engine
 ```
 
-Result at the branch tip: **158 passed** (0 failed, 0 skipped).
+Result at the branch tip: **210 passed** (0 failed, 0 skipped).
 
 | Area | Tests |
 |---|---:|
 | `unit/` (parser, schema, references, DAG) | 27 |
-| `persistence/` | 33 |
+| `persistence/` | 70 |
 | `artifacts/` | 10 |
 | `executors/` | 8 |
-| `execution/` (controller E2E) | 11 |
-| `scheduler/` | 4 |
-| `verification/` | 25 |
-| `recovery/` | 31 |
-| `cli/` | 5 |
+| `execution/` (controller E2E) | 17 |
+| `scheduler/` | 5 |
+| `verification/` | 26 |
+| `recovery/` | 35 |
+| `cli/` | 8 |
 | `test_api.py` | 4 |
-| **Total** | **158** |
+| **Total** | **210** |
 
 The end-to-end tests use real `RunStore`, `RunLayout` and the run controller.
-`tests/graph_engine/test_api.py` and the CLI tests use the real
-`ExecutorRegistry`; the controller retry and resume tests use a stub registry
-with the production `get_executor()` interface. The controller retry test
-retries after an executor failure; a retry after a verification failure is not
-covered by a committed test. They cover run → verify → retry → complete,
+`tests/graph_engine/test_api.py`, the CLI tests, and one `AgentVerifier` test
+use the real `ExecutorRegistry`; the controller retry and resume tests use a
+stub registry with the production `get_executor()` interface. Retries are
+covered both after an executor failure and after a verification failure. They cover run → verify → retry → complete,
 approval pause/resume, cancellation, timeout, and recovery.
 
 ---
@@ -113,7 +111,7 @@ documented limit; DEFERRED = not implemented.
 |---|---|---|---|
 | C1 | Tasks execute in DAG order | PASS | Controller E2E |
 | C2 | Independent tasks run in parallel | DEFERRED | Sequential controller |
-| C3 | `max_concurrency` enforced | PASS | Readiness caps selected tasks |
+| C3 | `max_concurrency` enforced | PASS | Readiness caps selected tasks; RUNNING and VERIFYING tasks both occupy a slot (pure-function test) |
 | C4 | Failed branch does not stop independent branches | PASS | Controller continues until no ready tasks |
 | C5 | Downstream blocked after dependency failure | PASS | Readiness propagates blocking |
 
@@ -184,16 +182,16 @@ documented limit; DEFERRED = not implemented.
 
 | AC | Requirement | Status | Evidence |
 |---|---|---|---|
-| J1 | `validate`, `run`, `status`, `resume`, `cancel` work | PASS | CLI tests; `approve` and `reject` also work |
+| J1 | `validate`, `run`, `status`, `resume`, `approve`, `reject`, `cancel` work | PASS | CLI tests cover `validate`, `run`, `status`, `resume`, `approve`, `reject`, `cancel` |
 | J2 | Unit tests pass | PASS | 27 unit tests |
-| J3 | Scheduler tests pass | PASS | 4 tests |
-| J4 | Recovery tests pass | PASS | 31 tests |
+| J3 | Scheduler tests pass | PASS | 5 tests |
+| J4 | Recovery tests pass | PASS | 35 tests |
 | J5 | End-to-end test passes | PASS | Controller, API, and CLI E2E |
 | J6 | Documentation explains format and operations | PASS | This document |
 
 **Overall:** Stages 1-7 are implemented for mock executors. Full acceptance is
 blocked by C2 (parallel execution), I2/I5 (metrics and cost persistence), and
-Stage 8 real adapters. Those are out of scope for issue #17.
+Stage 8 real adapters. Those are out of scope for issues #17 and #18.
 
 ---
 
@@ -237,7 +235,7 @@ python3 -m graph_engine.cli.main validate \
   tests/graph_engine/fixtures/workflows/valid-simple.yaml
 ```
 
-Record in issue #17: verdict, evidence, reviewed SHA, and limitations. Do not
+Record in issue #18: verdict, evidence, reviewed SHA, and limitations. Do not
 push, merge, tag, deploy, or close the issue without explicit owner approval.
 
 ---
