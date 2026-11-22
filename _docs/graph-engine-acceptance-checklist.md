@@ -4,9 +4,9 @@
 adapters are out of scope. Independent QA is pending.
 
 **Date:** 2026-11-22  
-**Branch:** `issue/18-graph-engine-qa-followups`  
-**Base:** `main` (includes the #17 work merged via #19)  
-**Code under test:** branch tip (QA records the reviewed SHA in issue #18)  
+**Branch:** `issue/21-verification-time-timeout`  
+**Base:** `main` (includes #17 via #19 and #18 via #20)  
+**Code under test:** branch tip (QA records the reviewed SHA in issue #21)  
 **Version:** 0.1.0
 
 This is the only current status document. It replaces the earlier
@@ -23,6 +23,7 @@ longer existed.
 - Executor registry with a deterministic mock adapter
 - Sequential run controller: dependencies, retries with feedback, verification,
   artifact publication, blocking on failed dependencies, cancellation, run timeout
+  (executor plus verification time)
 - Command, agent, and human verification methods
 - Approval pause/resume at `before_execution` and `before_publish`
 - Recovery and reconciliation of interrupted runs, including artifact size and
@@ -55,7 +56,7 @@ Command:
 python3 -m pytest tests/graph_engine
 ```
 
-Result at the branch tip: **210 passed** (0 failed, 0 skipped).
+Result at the branch tip: **216 passed** (0 failed, 0 skipped).
 
 | Area | Tests |
 |---|---:|
@@ -63,13 +64,13 @@ Result at the branch tip: **210 passed** (0 failed, 0 skipped).
 | `persistence/` | 70 |
 | `artifacts/` | 10 |
 | `executors/` | 8 |
-| `execution/` (controller E2E) | 17 |
+| `execution/` (controller E2E) | 23 |
 | `scheduler/` | 5 |
 | `verification/` | 26 |
 | `recovery/` | 35 |
 | `cli/` | 8 |
 | `test_api.py` | 4 |
-| **Total** | **210** |
+| **Total** | **216** |
 
 The end-to-end tests use real `RunStore`, `RunLayout` and the run controller.
 `tests/graph_engine/test_api.py`, the CLI tests, and one `AgentVerifier` test
@@ -165,7 +166,7 @@ documented limit; DEFERRED = not implemented.
 | H1 | Human approval can be required per task | PASS | Approval gate tests |
 | H2 | Executors cannot approve their own actions | PASS | Decisions come from `ApprovalStore`; no executor approval API |
 | H3 | Push, merge, deploy need owner approval | PASS | Process rule in `AGENTS.md`, not engine code |
-| H4 | Execution limits enforced | PASS | Retries, timeout, cancellation |
+| H4 | Execution limits enforced | PASS | Retries, timeout, cancellation. `max_run_duration_minutes` bounds active work: `active_execution_seconds` accumulates executor time plus time inside `verify_all` (command, agent and human verifiers), across all attempts. Reason: a slow verifier is active work, and `AgentVerifier` is the same kind of executor call already counted. Approval waits are not counted. The limit is checked at the top of each loop iteration, so the task whose verification crosses the limit still finishes; the run then fails with "run timeout exceeded" before the next task. Verifiers are not interrupted (per-verifier timeouts are out of scope) |
 
 ### I. Observability
 
@@ -235,7 +236,7 @@ python3 -m graph_engine.cli.main validate \
   tests/graph_engine/fixtures/workflows/valid-simple.yaml
 ```
 
-Record in issue #18: verdict, evidence, reviewed SHA, and limitations. Do not
+Record in issue #21: verdict, evidence, reviewed SHA, and limitations. Do not
 push, merge, tag, deploy, or close the issue without explicit owner approval.
 
 ---
