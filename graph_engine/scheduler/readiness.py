@@ -62,7 +62,7 @@ def compute_ready_tasks(
 
     running_count = sum(
         1 for task in run_state.tasks.values()
-        if task.status == TaskStatus.RUNNING
+        if task.status in (TaskStatus.RUNNING, TaskStatus.VERIFYING)
     )
     available_slots = max(0, max_concurrency - running_count)
 
