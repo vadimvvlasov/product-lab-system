@@ -56,12 +56,12 @@ Command:
 python3 -m pytest tests/graph_engine
 ```
 
-Result at the branch tip: **153 passed** (0 failed, 0 skipped).
+Result at the branch tip: **158 passed** (0 failed, 0 skipped).
 
 | Area | Tests |
 |---|---:|
 | `unit/` (parser, schema, references, DAG) | 27 |
-| `persistence/` | 28 |
+| `persistence/` | 33 |
 | `artifacts/` | 10 |
 | `executors/` | 8 |
 | `execution/` (controller E2E) | 11 |
@@ -70,11 +70,15 @@ Result at the branch tip: **153 passed** (0 failed, 0 skipped).
 | `recovery/` | 31 |
 | `cli/` | 5 |
 | `test_api.py` | 4 |
-| **Total** | **153** |
+| **Total** | **158** |
 
-The end-to-end tests use real `RunStore`, `RunLayout`, `ExecutorRegistry`, and
-the run controller. They cover run → verify → retry → complete, approval
-pause/resume, cancellation, timeout, and recovery.
+The end-to-end tests use real `RunStore`, `RunLayout` and the run controller.
+`tests/graph_engine/test_api.py` and the CLI tests use the real
+`ExecutorRegistry`; the controller retry and resume tests use a stub registry
+with the production `get_executor()` interface. The controller retry test
+retries after an executor failure; a retry after a verification failure is not
+covered by a committed test. They cover run → verify → retry → complete,
+approval pause/resume, cancellation, timeout, and recovery.
 
 ---
 
