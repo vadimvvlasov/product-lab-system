@@ -142,3 +142,23 @@ def main_status(run_dir, capsys, expected=EXIT_OK):
     capsys.readouterr()
     assert main(["status", str(run_dir)]) == expected
     return capsys.readouterr().out.lower()
+
+
+BAD_ENV_WORKFLOW = WORKFLOW.replace(
+    "      artifacts: [out]", "      artifacts: [out]\n      api_key: env:1X"
+)
+
+
+def test_validate_malformed_env_reference_exits_4(tmp_path, capsys):
+    path = write_workflow(tmp_path, BAD_ENV_WORKFLOW)
+
+    assert main(["validate", str(path)]) == EXIT_INVALID_WORKFLOW
+    assert "invalid environment variable name '1X'" in capsys.readouterr().out
+
+
+def test_run_malformed_env_reference_exits_4_without_run_dir_contents(tmp_path):
+    path = write_workflow(tmp_path, BAD_ENV_WORKFLOW)
+    runs_dir = tmp_path / "runs"
+
+    assert main(["run", str(path), "--runs-dir", str(runs_dir)]) == EXIT_INVALID_WORKFLOW
+    assert not runs_dir.exists() or list(runs_dir.iterdir()) == []
