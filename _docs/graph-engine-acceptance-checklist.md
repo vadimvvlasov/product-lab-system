@@ -4,9 +4,9 @@
 adapters are out of scope. Independent QA is pending.
 
 **Date:** 2026-11-22  
-**Branch:** `issue/22-secret-keys-access-ssh`  
-**Base:** `main` (includes #17 via #19 and #18 via #20)  
-**Code under test:** branch tip (QA records the reviewed SHA in issue #22)  
+**Branch:** `issue/23-env-name-grammar`  
+**Base:** `main` (includes #17 via #19, #18 via #20, #21 via #24 and #22 via #25)  
+**Code under test:** branch tip (QA records the reviewed SHA in issue #23)  
 **Version:** 0.1.0
 
 This is the only current status document. It replaces the earlier
@@ -56,21 +56,26 @@ Command:
 python3 -m pytest tests/graph_engine
 ```
 
-Result at the branch tip: **244 passed** (0 failed, 0 skipped).
+Result at the branch tip: **336 passed** (0 failed, 0 skipped).
 
 | Area | Tests |
 |---|---:|
-| `unit/` (parser, schema, references, DAG) | 27 |
-| `persistence/` | 98 |
+| `unit/` (parser, schema, references, DAG, env refs) | 87 |
+| `persistence/` | 128 |
 | `artifacts/` | 10 |
 | `executors/` | 8 |
 | `execution/` (controller E2E) | 23 |
 | `scheduler/` | 5 |
 | `verification/` | 26 |
 | `recovery/` | 35 |
-| `cli/` | 8 |
+| `cli/` | 10 |
 | `test_api.py` | 4 |
-| **Total** | **244** |
+| **Total** | **336** |
+
+`env:NAME` references: every string value in `executors.*.config` (any depth, any
+key, secret or not) that starts with the case-sensitive prefix `env:` must match
+`[A-Za-z_][A-Za-z0-9_]*` exactly, with no trimming; `validate_workflow` reports
+violations (exit 4) and `snapshot_executor_config` rejects them as a backstop.
 
 The end-to-end tests use real `RunStore`, `RunLayout` and the run controller.
 `tests/graph_engine/test_api.py`, the CLI tests, and one `AgentVerifier` test
@@ -184,7 +189,7 @@ documented limit; DEFERRED = not implemented.
 | AC | Requirement | Status | Evidence |
 |---|---|---|---|
 | J1 | `validate`, `run`, `status`, `resume`, `approve`, `reject`, `cancel` work | PASS | CLI tests cover `validate`, `run`, `status`, `resume`, `approve`, `reject`, `cancel` |
-| J2 | Unit tests pass | PASS | 27 unit tests |
+| J2 | Unit tests pass | PASS | 87 unit tests |
 | J3 | Scheduler tests pass | PASS | 5 tests |
 | J4 | Recovery tests pass | PASS | 35 tests |
 | J5 | End-to-end test passes | PASS | Controller, API, and CLI E2E |
