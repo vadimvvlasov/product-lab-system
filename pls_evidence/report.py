@@ -12,7 +12,7 @@ import io
 import re
 from dataclasses import dataclass
 
-from pls_evidence.clipping import Clipping
+from pls_evidence.clipping import Clipping, SkippedClipping
 
 _BUILDER = re.compile(
     r"\b(?:I|we)(?:'ve| have)?\s+(?:built|made|created|launched)\b"
@@ -59,8 +59,8 @@ def _source_name(clipping: Clipping) -> str:
     return host.group(1) if host else ""
 
 
-def build_report(clippings: list[Clipping]) -> list[ReportRow]:
-    return [
+def build_report(clippings: list[Clipping], skipped: list[SkippedClipping] | None = None) -> list[ReportRow]:
+    rows = [
         ReportRow(
             file=c.path.name,
             source_name=_source_name(c),
@@ -72,6 +72,19 @@ def build_report(clippings: list[Clipping]) -> list[ReportRow]:
         )
         for c in clippings
     ]
+    rows.extend(
+        ReportRow(
+            file=s.path.name,
+            source_name="",
+            published="",
+            author="",
+            title="",
+            comments=0,
+            flags=[f"skipped: {s.reason}"],
+        )
+        for s in (skipped or [])
+    )
+    return rows
 
 
 def render_markdown(rows: list[ReportRow]) -> str:

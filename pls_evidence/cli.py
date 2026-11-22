@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from pls_evidence.clipping import load_clippings
+from pls_evidence.clipping import scan_clippings
 from pls_evidence.report import build_report, render_csv, render_markdown
 from pls_evidence.table import parse_evidence_table
 from pls_evidence.verify import FAIL, summarize, verify_rows, write_log
@@ -24,6 +24,11 @@ def _build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--clippings", type=Path, required=True, help="directory with clippings")
     verify.add_argument("--log", type=Path, required=True, help="JSON log to write")
     verify.add_argument("--overwrite", action="store_true", help="replace an existing log")
+    verify.add_argument(
+        "--strict",
+        action="store_true",
+        help="exit 1 also when a row has no clipping (NO_SNAPSHOT)",
+    )
 
     report = sub.add_parser("report", help="list clippings with heuristic flags")
     report.add_argument("--clippings", type=Path, required=True, help="directory with clippings")
@@ -44,31 +49,45 @@ def _run_verify(args: argparse.Namespace) -> int:
     if not rows:
         print("error: no evidence rows (E-NNN) found", file=sys.stderr)
         return 2
-    results = verify_rows(rows, load_clippings(args.clippings))
+    clippings, skipped = scan_clippings(args.clippings)
+    results = verify_rows(rows, clippings)
     try:
         write_log(
             args.log,
             evidence_path=args.evidence,
             clippings_dir=args.clippings,
             results=results,
+            skipped=skipped,
             overwrite=args.overwrite,
         )
     except (ValueError, FileExistsError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     counts = summarize(results)
-    print(f"PASS={counts['PASS']} FAIL={counts['FAIL']} NO_SNAPSHOT={counts['NO_SNAPSHOT']} log={args.log}")
+    print(
+        f"PASS={counts['PASS']} FAIL={counts['FAIL']} NO_SNAPSHOT={counts['NO_SNAPSHOT']} "
+        f"SKIPPED_CLIPPINGS={len(skipped)} log={args.log}"
+    )
+    for item in skipped:
+        print(f"SKIPPED {item.path.name}: {item.reason}")
     for result in results:
         if result.status == FAIL:
             print(f"FAIL {result.id}: {result.note or result.fields}")
-    return 1 if counts["FAIL"] else 0
+        for warning in result.warnings:
+            print(f"WARN {result.id}: {warning}")
+    if counts["FAIL"]:
+        return 1
+    if args.strict and counts["NO_SNAPSHOT"]:
+        return 1
+    return 0
 
 
 def _run_report(args: argparse.Namespace) -> int:
     if not args.clippings.is_dir():
         print(f"error: clippings directory not found: {args.clippings}", file=sys.stderr)
         return 2
-    rows = build_report(load_clippings(args.clippings))
+    clippings, skipped = scan_clippings(args.clippings)
+    rows = build_report(clippings, skipped)
     text = render_csv(rows) if args.format == "csv" else render_markdown(rows)
     if args.out is None:
         sys.stdout.write(text)
