@@ -2,8 +2,10 @@
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
+from graph_engine.errors import ExecutorError
 from graph_engine.models.workflow import WorkflowDefinition
 
 
@@ -61,15 +63,49 @@ def snapshot_executor_config(workflow: WorkflowDefinition, target: Path) -> str:
 
 def _normalize_config(config: dict) -> dict:
     """
-    Normalize config for snapshot (mask secrets).
-    
-    Real implementation in Stage 8 will:
-    - Detect env:NAME references
-    - Reject literal secret keys
-    - Store env var names, not values
+    Normalize config for the snapshot.
+
+    `env:NAME` references are stored as references, never resolved. Literal
+    values for secret-looking keys are rejected so that credentials do not end
+    up in the run directory.
     """
-    # Placeholder: pass through for now
-    return config.copy()
+    normalized = {}
+    for key, value in config.items():
+        if _looks_secret(key):
+            if isinstance(value, str) and value.startswith("env:"):
+                normalized[key] = value
+                continue
+            raise ExecutorError(
+                f"executor config key '{key}' looks secret; use env:NAME instead "
+                "of a literal value"
+            )
+        if isinstance(value, dict):
+            normalized[key] = _normalize_config(value)
+        elif isinstance(value, list):
+            normalized[key] = [_normalize_value(item) for item in value]
+        else:
+            normalized[key] = value
+    return normalized
+
+
+def _normalize_value(value):
+    if isinstance(value, dict):
+        return _normalize_config(value)
+    if isinstance(value, list):
+        return [_normalize_value(item) for item in value]
+    return value
+
+
+_SECRET_KEY = re.compile(
+    r"(^|_)(api_key|token|secret|secret_key|password|credential|authorization)$"
+)
+
+
+def _looks_secret(key: str) -> bool:
+    # Split camelCase at lower->upper boundaries only, so UPPER_CASE keys such
+    # as API_KEY stay intact instead of becoming a_p_i__k_e_y.
+    snake = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", key).replace("-", "_").lower()
+    return bool(_SECRET_KEY.search(snake))
 
 
 def verify_snapshot_hash(path: Path, expected_hash: str) -> bool:

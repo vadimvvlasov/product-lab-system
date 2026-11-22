@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from graph_engine.errors import ArtifactError
+from graph_engine.ids import require_safe_id
 
 
 @dataclass
@@ -64,7 +65,10 @@ class ArtifactManager:
             )
         
         rel_path = output_path[len("artifacts/"):]
-        staged_path = staging_root / "artifacts" / rel_path
+        staged_path = (staging_root / "artifacts" / rel_path).resolve()
+        staging_artifacts = (staging_root / "artifacts").resolve()
+        if staging_artifacts not in staged_path.parents:
+            raise ArtifactError(f"Artifact path escapes staging directory: {output_path}")
         
         # Check existence
         if not staged_path.exists():
@@ -116,8 +120,11 @@ class ArtifactManager:
         """
         if not target_path.startswith("artifacts/"):
             raise ArtifactError(f"Target path must start with 'artifacts/', got: {target_path}")
-        
-        final_path = self.run_root / target_path
+
+        final_path = (self.run_root / target_path).resolve()
+        artifacts_root = self.artifacts_dir.resolve()
+        if artifacts_root not in final_path.parents:
+            raise ArtifactError(f"Target path escapes artifacts directory: {target_path}")
         
         try:
             # Verify checksum before move
@@ -157,7 +164,17 @@ class ArtifactManager:
             target_dir: Target staging/inputs directory
             artifact_name: Artifact name (for subdirectory)
         """
+        require_safe_id(artifact_name, "input artifact name")
+
         target_subdir = target_dir / "inputs" / artifact_name
+
+        inputs_root = (target_dir / "inputs").resolve()
+        resolved_subdir = target_subdir.resolve()
+        if inputs_root not in resolved_subdir.parents:
+            raise ArtifactError(
+                f"Input artifact name escapes staging directory: {artifact_name}"
+            )
+
         target_subdir.mkdir(parents=True, exist_ok=True)
         
         # Preserve relative structure if source is in a nested path

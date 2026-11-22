@@ -28,6 +28,7 @@ class TaskState:
     completed_at: Optional[str] = None
     errors: list[ErrorRecord] = field(default_factory=list)
     block_reason: Optional[str] = None
+    artifacts: list[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -98,6 +99,7 @@ class RunState:
                         for err in task.errors
                     ],
                     "block_reason": task.block_reason,
+                    "artifacts": task.artifacts,
                 }
                 for task_id, task in self.tasks.items()
             },
@@ -135,6 +137,7 @@ class RunState:
                     for err in task_data.get("errors", [])
                 ],
                 block_reason=task_data.get("block_reason"),
+                artifacts=task_data.get("artifacts", []),
             )
         
         return cls(

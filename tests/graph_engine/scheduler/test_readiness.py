@@ -41,10 +41,10 @@ tasks:
         tasks={"task-a": TaskState(task_id="task-a", status=TaskStatus.PENDING)},
     )
     
-    ready, blocked = compute_ready_tasks(workflow, run_state, 2)
+    plan = compute_ready_tasks(workflow, run_state, 2)
     
-    assert "task-a" in ready
-    assert len(blocked) == 0
+    assert "task-a" in plan.ready
+    assert len(plan.blocked) == 0
 
 
 def test_compute_ready_waits_for_dependency():
@@ -93,10 +93,10 @@ tasks:
         },
     )
     
-    ready, blocked = compute_ready_tasks(workflow, run_state, 2)
+    plan = compute_ready_tasks(workflow, run_state, 2)
     
-    assert "task-b" not in ready  # Still waiting
-    assert "task-b" not in blocked
+    assert "task-b" not in plan.ready  # Still waiting
+    assert "task-b" not in plan.blocked
 
 
 def test_compute_ready_concurrency_limit():
@@ -144,10 +144,10 @@ tasks:
         },
     )
     
-    ready, blocked = compute_ready_tasks(workflow, run_state, 1)
+    plan = compute_ready_tasks(workflow, run_state, 1)
     
     # task-b is not ready because concurrency limit reached
-    assert "task-b" not in ready
+    assert "task-b" not in plan.ready
 
 
 def test_dependency_failure_blocks_downstream():
@@ -196,7 +196,7 @@ tasks:
         },
     )
     
-    ready, blocked = compute_ready_tasks(workflow, run_state, 2)
+    plan = compute_ready_tasks(workflow, run_state, 2)
     
-    assert "task-b" not in ready
-    assert "task-b" in blocked
+    assert "task-b" not in plan.ready
+    assert "task-b" in plan.blocked

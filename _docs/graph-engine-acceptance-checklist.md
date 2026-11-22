@@ -1,175 +1,250 @@
-# Graph Engine MVP — Acceptance Checklist
+# Graph Engine — Current Status and Acceptance Checklist
 
-**Status:** Stage 8 complete (minimal viable implementation)  
-**Date:** 2026-10-31  
+**Status:** Implemented through Stage 7 with mock executors. Stage 8 real
+adapters are out of scope. Independent QA is pending.
+
+**Date:** 2026-11-22  
+**Branch:** `issue/17-graph-engine-integrity`  
+**Base:** `feat/graph-engine-stages-5-8` (not `main`; the Stage 5-6 code under
+repair is not on `main`)  
+**Code under test:** branch tip (QA records the reviewed SHA in issue #17)  
 **Version:** 0.1.0
 
----
-
-## Implementation Scope
-
-This MVP implements **core workflow validation and persistence** (Stages 1-4 complete, 5-7 minimal).
-
-**What IS included:**
-- ✅ Workflow YAML parsing and validation
-- ✅ DAG validation with cycle detection
-- ✅ Persistence layer with atomic writes
-- ✅ Artifact management
-- ✅ Executor interface and mock executor
-- ✅ Scheduler readiness logic
-- ✅ CLI validate command
-- ✅ Event logging foundation
-
-**What is NOT yet included (future work):**
-- ⏳ Task execution controller (Stage 4 incomplete)
-- ⏳ Verification and retry logic (Stage 5)
-- ⏳ Recovery and resume (Stage 6)
-- ⏳ Full CLI (run/status/resume/approve) (Stage 7)
-- ⏳ Real executor adapters (command, opencode) (Stage 8)
-- ⏳ E2E execution tests (Stage 8)
+This is the only current status document. It replaces the earlier
+`graph-engine-qa-handoff.md`, which described a branch and test count that no
+longer existed.
 
 ---
 
-## Acceptance Criteria (Implemented)
+## What works
 
-### A. Architecture ✅
-| AC | Requirement | Status | Evidence |
-|---|---|---|---|
-| A1 | Separate logical module | ✅ PASS | `graph_engine/` package exists |
-| A2 | No imports from `product_lifecycle` | ✅ PASS | Verified via test |
-| A3 | Lifecycle can invoke stable interface | ✅ PASS | `graph_engine.api.validate_workflow_file()` |
-| A4 | No product-specific business logic | ✅ PASS | Generic orchestration only |
+- Workflow YAML parsing, schema/reference/DAG validation
+- Immutable workflow and executor-config snapshots with hash verification
+- Atomic run state persistence and artifact management
+- Executor registry with a deterministic mock adapter
+- Sequential run controller: dependencies, retries with feedback, verification,
+  artifact publication, blocking on failed dependencies, cancellation, run timeout
+- Command, agent, and human verification methods
+- Approval pause/resume at `before_execution` and `before_publish`
+- Recovery and reconciliation of interrupted runs, including artifact size and
+  checksum checks
+- Public API and CLI: `validate`, `run`, `status`, `resume`, `approve`, `reject`,
+  `cancel`
+- Structured JSONL events
 
-### B. Workflow Validation ✅
-| AC | Requirement | Status | Evidence |
-|---|---|---|---|
-| B1 | Load and validate YAML | ✅ PASS | Parser tests |
-| B2 | Reject invalid schemas | ✅ PASS | 7 parser tests |
-| B3 | Reject missing references | ✅ PASS | 7 reference tests |
-| B4 | Detect/reject cycles | ✅ PASS | 3 DAG tests |
-| B5 | Deterministic executor resolution | ✅ PASS | Registry tests |
-| B6 | Invalid workflows cannot start | ✅ PASS | Validation before run creation |
+## What does not work yet
 
-### E. Data and Artifacts (Partial) ✅
-| AC | Requirement | Status | Evidence |
-|---|---|---|---|
-| E1 | Inputs explicitly declared | ✅ PASS | Schema validation |
-| E2 | Undeclared dependency outputs not passed | ✅ PASS | Context builder design |
-| E3 | Required artifacts validated | ✅ PASS | Artifact manager tests |
-| E4 | Publish only after successful verification | ⏳ DEFER | Verification not implemented |
-| E5 | Checksums and provenance | ✅ PASS | ArtifactRecord with SHA-256 |
-
-### F. Persistence and Recovery (Partial) ✅
-| AC | Requirement | Status | Evidence |
-|---|---|---|---|
-| F1 | Run state JSON | ✅ PASS | RunState model + tests |
-| F2 | Workflow templates YAML | ✅ PASS | Snapshot with hash |
-| F3 | Atomic writes where supported | ✅ PASS | fsync + os.replace |
-| F4 | Immutable workflow snapshot | ✅ PASS | Hash verification |
-| F5 | Completed verified tasks reused | ⏳ DEFER | Recovery not implemented |
-| F6 | Incomplete attempts never reused | ⏳ DEFER | Recovery not implemented |
-| F7 | Unsafe external side effects not repeated | ⏳ DEFER | Recovery not implemented |
-
-### G. Agent Collaboration (Partial) ✅
-| AC | Requirement | Status | Evidence |
-|---|---|---|---|
-| G1 | Common executor interface | ✅ PASS | Executor protocol |
-| G2 | Fresh context per task/retry | ✅ PASS | ExecutionContext design |
-| G3 | Context only declared inputs/references | ✅ PASS | Context model |
-| G4 | Implementer/reviewer independent | ⏳ DEFER | Agent verification not implemented |
-| G5 | Reviewer feedback used in next attempt | ⏳ DEFER | Retry logic not implemented |
-
-### J. CLI and Quality (Partial) ✅
-| AC | Requirement | Status | Evidence |
-|---|---|---|---|
-| J1 | `validate`, `run`, `status`, `resume`, `cancel` work | ⚠️ PARTIAL | Only `validate` implemented |
-| J2 | Unit tests pass | ✅ PASS | 53/53 tests pass |
-| J3 | Scheduler tests pass | ✅ PASS | 4 readiness tests |
-| J4 | Recovery tests pass | ⏳ DEFER | Recovery not implemented |
-| J5 | End-to-end test passes | ⏳ DEFER | E2E not implemented |
-| J6 | Documentation explains format/operations | ✅ PASS | This checklist + Stage 0 plan |
+- Independent tasks do not execute in parallel. The controller is sequential;
+  `max_concurrency` only caps how many tasks are selected per iteration.
+- Only the `mock` adapter exists. `command` and `opencode` executor adapters are
+  Stage 8 work.
+- `metrics.json` is not written. Usage and estimated cost from executor results
+  are not persisted.
+- Per-task durations are not recorded. `run.json` stores total active execution
+  seconds only.
+- Human approval is file-based. The engine trusts the run directory; this is not
+  a security boundary against a hostile executor.
+- Command verification is not a sandbox. Workflow commands are trusted input.
 
 ---
 
-## Test Results
+## Test evidence
 
-**Total tests:** 53  
-**Passed:** 53  
-**Failed:** 0  
-**Skipped:** 0
+Command:
 
-```
-tests/graph_engine/unit/                  22 passed
-tests/graph_engine/persistence/           10 passed
-tests/graph_engine/artifacts/              5 passed
-tests/graph_engine/executors/              7 passed
-tests/graph_engine/execution/              5 passed
-tests/graph_engine/scheduler/              4 passed
+```bash
+python3 -m pytest tests/graph_engine
 ```
 
----
+Result at the branch tip: **158 passed** (0 failed, 0 skipped).
 
-## Known Limitations
+| Area | Tests |
+|---|---:|
+| `unit/` (parser, schema, references, DAG) | 27 |
+| `persistence/` | 33 |
+| `artifacts/` | 10 |
+| `executors/` | 8 |
+| `execution/` (controller E2E) | 11 |
+| `scheduler/` | 4 |
+| `verification/` | 25 |
+| `recovery/` | 31 |
+| `cli/` | 5 |
+| `test_api.py` | 4 |
+| **Total** | **158** |
 
-1. **No task execution:** Can validate and persist workflows, but cannot run them yet
-2. **No verification:** Verification criteria parsed but not enforced
-3. **No retry logic:** Retry configuration validated but not implemented
-4. **No recovery:** Cannot resume interrupted runs
-5. **No approval gates:** Approval configuration parsed but not enforced
-6. **No real executors:** Only mock executor; command/opencode adapters not implemented
-7. **Limited CLI:** Only `validate` command works
-
----
-
-## Recommendations for Next Phase
-
-### Priority 1: Complete Core Execution (Stage 4-5)
-- Implement controller loop with mock executors
-- Add basic verification (command method only)
-- Add retry logic with feedback
-- **Goal:** Can run simple workflows end-to-end with mocks
-
-### Priority 2: Add Recovery (Stage 6)
-- Implement resume logic
-- Add run state reconciliation
-- Handle interrupted attempts
-- **Goal:** Can recover from crashes
-
-### Priority 3: Complete CLI (Stage 7)
-- Add `run`, `status`, `resume`, `cancel` commands
-- Add human approval gates
-- **Goal:** Fully functional CLI
-
-### Priority 4: Real Adapters (Stage 8)
-- Implement CommandExecutor
-- Implement OpenCodeExecutor (optional)
-- Add E2E tests with real execution
-- **Goal:** Production-ready with real agents
+The end-to-end tests use real `RunStore`, `RunLayout` and the run controller.
+`tests/graph_engine/test_api.py` and the CLI tests use the real
+`ExecutorRegistry`; the controller retry and resume tests use a stub registry
+with the production `get_executor()` interface. The controller retry test
+retries after an executor failure; a retry after a verification failure is not
+covered by a committed test. They cover run → verify → retry → complete,
+approval pause/resume, cancellation, timeout, and recovery.
 
 ---
 
-## Definition of Done (Current MVP)
+## Acceptance criteria
 
-✅ Workflow validation works end-to-end  
-✅ Persistence layer is atomic and crash-safe  
-✅ Executor interface is defined and testable  
-✅ 53 automated tests pass  
-✅ CLI can validate workflows  
-✅ Documentation exists (this checklist + plan)  
-✅ No imports from product_lifecycle or vault  
-✅ Package boundary is enforced  
+Legend: PASS = implemented and covered by tests; PARTIAL = implemented with a
+documented limit; DEFERRED = not implemented.
 
-❌ Cannot execute workflows yet (future work)
+### A. Architecture
+
+| AC | Requirement | Status | Evidence |
+|---|---|---|---|
+| A1 | Separate logical module | PASS | `graph_engine/` package |
+| A2 | No imports from `product_lifecycle` | PASS | No such imports in `graph_engine/` or its tests |
+| A3 | Stable interface for Product Lifecycle | PASS | `graph_engine.api` |
+| A4 | No product-specific business logic | PASS | Generic orchestration only |
+
+### B. Workflow validation
+
+| AC | Requirement | Status | Evidence |
+|---|---|---|---|
+| B1 | Load and validate YAML | PASS | Parser tests |
+| B2 | Reject invalid schemas | PASS | Schema tests |
+| B3 | Reject missing references | PASS | Reference tests |
+| B4 | Detect and reject cycles | PASS | DAG tests |
+| B5 | Deterministic executor resolution | PASS | Registry tests |
+| B6 | Invalid workflows cannot start | PASS | `create_run()` validates first |
+
+### C. Execution
+
+| AC | Requirement | Status | Evidence |
+|---|---|---|---|
+| C1 | Tasks execute in DAG order | PASS | Controller E2E |
+| C2 | Independent tasks run in parallel | DEFERRED | Sequential controller |
+| C3 | `max_concurrency` enforced | PASS | Readiness caps selected tasks |
+| C4 | Failed branch does not stop independent branches | PASS | Controller continues until no ready tasks |
+| C5 | Downstream blocked after dependency failure | PASS | Readiness propagates blocking |
+
+### D. Verification and retries
+
+| AC | Requirement | Status | Evidence |
+|---|---|---|---|
+| D1 | Mandatory completion criteria enforced | PASS | Verification engine |
+| D2 | Command, agent, human methods work | PASS | Verifier tests |
+| D3 | Every attempt persisted | PASS | `tasks/<id>/attempts/NNN.json` |
+| D4 | Retry feedback reaches next attempt | PASS | Retry feedback tests |
+| D5 | Retry limits enforced | PASS | Controller tests |
+| D6 | Exhausted tasks become blocked | PASS | Controller tests |
+
+### E. Data and artifacts
+
+| AC | Requirement | Status | Evidence |
+|---|---|---|---|
+| E1 | Inputs explicitly declared | PASS | Schema validation |
+| E2 | Undeclared outputs are not passed | PASS | Context builder |
+| E3 | Required artifacts validated | PASS | Artifact manager tests |
+| E4 | Publish only after verification | PASS | Controller E2E |
+| E5 | Checksums and provenance | PASS | `ArtifactRecord`; checksums persisted in `TaskState` |
+
+### F. Persistence and recovery
+
+| AC | Requirement | Status | Evidence |
+|---|---|---|---|
+| F1 | Run state stored in JSON | PASS | `RunState` |
+| F2 | Workflow templates stored in YAML | PASS | Snapshot |
+| F3 | Atomic writes | PASS | fsync + `os.replace` |
+| F4 | Immutable workflow snapshot | PASS | Hash verification |
+| F5 | Completed verified tasks reused | PASS | Recovery tests; size and checksum checked |
+| F6 | Incomplete attempts never reused | PASS | Recovery tests |
+| F7 | Unsafe side effects not repeated | PASS | Recovery blocks unsafe tasks |
+
+### G. Agent collaboration
+
+| AC | Requirement | Status | Evidence |
+|---|---|---|---|
+| G1 | Common executor interface | PASS | `Executor` protocol |
+| G2 | Fresh context per task and retry | PASS | Context built per attempt |
+| G3 | Context only declared inputs and references | PASS | Context builder |
+| G4 | Implementer and reviewer independent | PASS | Agent verifier uses its own configured executor |
+| G5 | Reviewer feedback used in next attempt | PASS | Retry feedback tests |
+
+### H. Safety
+
+| AC | Requirement | Status | Evidence |
+|---|---|---|---|
+| H1 | Human approval can be required per task | PASS | Approval gate tests |
+| H2 | Executors cannot approve their own actions | PASS | Decisions come from `ApprovalStore`; no executor approval API |
+| H3 | Push, merge, deploy need owner approval | PASS | Process rule in `AGENTS.md`, not engine code |
+| H4 | Execution limits enforced | PASS | Retries, timeout, cancellation |
+
+### I. Observability
+
+| AC | Requirement | Status | Evidence |
+|---|---|---|---|
+| I1 | Structured JSONL events | PASS | `logs/events.jsonl` |
+| I2 | Per-run metrics persisted | DEFERRED | `metrics.json` is not written |
+| I3 | Durations and retry counts available | PARTIAL | Retry counts and total active seconds; no per-task duration |
+| I4 | Verification results and failure reasons recorded | PASS | Attempt records and events |
+| I5 | Usage and estimated cost recorded when available | DEFERRED | `Usage` is returned but not persisted |
+| I6 | Missing usage represented honestly | PARTIAL | Nothing is claimed; usage is simply absent |
+
+### J. CLI and quality
+
+| AC | Requirement | Status | Evidence |
+|---|---|---|---|
+| J1 | `validate`, `run`, `status`, `resume`, `cancel` work | PASS | CLI tests; `approve` and `reject` also work |
+| J2 | Unit tests pass | PASS | 27 unit tests |
+| J3 | Scheduler tests pass | PASS | 4 tests |
+| J4 | Recovery tests pass | PASS | 31 tests |
+| J5 | End-to-end test passes | PASS | Controller, API, and CLI E2E |
+| J6 | Documentation explains format and operations | PASS | This document |
+
+**Overall:** Stages 1-7 are implemented for mock executors. Full acceptance is
+blocked by C2 (parallel execution), I2/I5 (metrics and cost persistence), and
+Stage 8 real adapters. Those are out of scope for issue #17.
 
 ---
 
-## Sign-Off
+## CLI examples
 
-**Implementer:** Coding agent (Claude Sonnet 4.5 via Kiro)  
-**QA Status:** ⏳ Awaiting independent QA  
-**Owner Approval:** ⏳ Pending
+The fixture below is runnable with the mock executor:
 
-**Commit Range:** `e040929..HEAD` on `feat/graph-engine`  
-**Files Changed:** ~40 files, ~3500 lines  
-**Stages Completed:** 1-4 complete, 5-7 minimal, 8 partial
+```bash
+python3 -m graph_engine.cli.main validate \
+  tests/graph_engine/fixtures/workflows/valid-simple.yaml
 
+python3 -m graph_engine.cli.main run \
+  tests/graph_engine/fixtures/workflows/valid-simple.yaml \
+  --runs-dir /tmp/pls-runs
+
+python3 -m graph_engine.cli.main status /tmp/pls-runs/<run-id>
+```
+
+Exit codes: `0` completed, `1` error, `2` usage, `3` awaiting approval or
+completed with blockers, `4` invalid workflow.
+
+Approval flow:
+
+```bash
+python3 -m graph_engine.cli.main approve <run-dir> <task-id> --approver owner
+python3 -m graph_engine.cli.main resume <run-dir>
+```
+
+---
+
+## QA procedure
+
+QA is independent and read-only. Review the exact branch-tip SHA in a separate
+worktree with `git status --short` empty.
+
+```bash
+git worktree add /tmp/opencode/pls-qa <sha>
+cd /tmp/opencode/pls-qa
+python3 -m pytest tests/graph_engine
+python3 -m graph_engine.cli.main validate \
+  tests/graph_engine/fixtures/workflows/valid-simple.yaml
+```
+
+Record in issue #17: verdict, evidence, reviewed SHA, and limitations. Do not
+push, merge, tag, deploy, or close the issue without explicit owner approval.
+
+---
+
+## Sign-off
+
+**Implementer:** Coding agent  
+**QA status:** Pending independent review  
+**Owner approval:** Pending  
+**Push/merge:** Not performed

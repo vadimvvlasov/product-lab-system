@@ -1,102 +1,122 @@
 """Task readiness computation (pure functions)."""
 
-from graph_engine.models.enums import TaskStatus
+from dataclasses import dataclass, field
+
+from graph_engine.models.enums import ApprovalPoint, ApprovalRequirement, TaskStatus
 from graph_engine.models.run import RunState
-from graph_engine.models.workflow import WorkflowDefinition
+from graph_engine.models.workflow import TaskDefinition, WorkflowDefinition
+
+
+@dataclass
+class ReadinessPlan:
+    """Result of a readiness computation."""
+
+    ready: list[str] = field(default_factory=list)
+    blocked: dict[str, str] = field(default_factory=dict)
+    awaiting_approval: list[str] = field(default_factory=list)
 
 
 def compute_ready_tasks(
     workflow: WorkflowDefinition,
     run_state: RunState,
     max_concurrency: int,
-) -> tuple[list[str], list[str]]:
+    approved_task_ids: frozenset[str] = frozenset(),
+    rejected_task_ids: frozenset[str] = frozenset(),
+) -> ReadinessPlan:
     """
-    Compute which tasks are ready to run and which should be blocked.
-    
+    Compute which tasks are ready, blocked, or waiting for approval.
+
     Pure function: no side effects, deterministic given inputs.
-    
+
     Args:
         workflow: Workflow definition
         run_state: Current run state
         max_concurrency: Maximum concurrent tasks
-        
+        approved_task_ids: Tasks with a recorded human approval
+        rejected_task_ids: Tasks with a recorded human rejection
+
     Returns:
-        (ready_task_ids, newly_blocked_task_ids)
+        ReadinessPlan with ready, blocked (reason per task), awaiting_approval
     """
-    ready = []
-    newly_blocked = []
-    
-    # Count running tasks
+    plan = ReadinessPlan()
+
+    # A rejection is terminal for the task and blocks its dependents.
+    blocked_ids: set[str] = set()
+    for task in workflow.tasks:
+        if _needs_approval(task) and task.id in rejected_task_ids:
+            plan.blocked[task.id] = "approval rejected"
+            blocked_ids.add(task.id)
+
+    # Propagate blocking transitively before dispatching anything.
+    changed = True
+    while changed:
+        changed = False
+        for task in workflow.tasks:
+            if task.id in blocked_ids:
+                continue
+            reason = _block_reason(task, run_state, blocked_ids)
+            if reason is not None:
+                plan.blocked[task.id] = reason
+                blocked_ids.add(task.id)
+                changed = True
+
     running_count = sum(
         1 for task in run_state.tasks.values()
         if task.status == TaskStatus.RUNNING
     )
-    
-    for task_def in workflow.tasks:
-        task_state = run_state.tasks.get(task_def.id)
+    available_slots = max(0, max_concurrency - running_count)
+
+    for task in workflow.tasks:
+        task_state = run_state.tasks.get(task.id)
         if not task_state:
             continue
-        
-        # Only process pending/retrying tasks
         if task_state.status not in (TaskStatus.PENDING, TaskStatus.RETRYING):
             continue
-        
-        # Check if should be blocked
-        block_reason = _should_block(task_def, run_state, workflow)
-        if block_reason:
-            newly_blocked.append(task_def.id)
+        if task.id in blocked_ids:
             continue
-        
-        # Check readiness
-        if _is_ready(task_def, run_state, running_count, max_concurrency):
-            ready.append(task_def.id)
-    
-    return ready, newly_blocked
+
+        # Dependencies must be completed; otherwise the task simply waits.
+        if not _dependencies_completed(task, run_state):
+            continue
+
+        if _needs_approval(task) and task.id not in approved_task_ids:
+            plan.awaiting_approval.append(task.id)
+            continue
+
+        if available_slots <= 0:
+            continue
+
+        plan.ready.append(task.id)
+        available_slots -= 1
+
+    return plan
 
 
-def _is_ready(
-    task_def,
-    run_state: RunState,
-    running_count: int,
-    max_concurrency: int,
-) -> bool:
-    """Check if task is ready to dispatch."""
-    task_state = run_state.tasks.get(task_def.id)
-    if not task_state:
-        return False
-    
-    # Must be pending or retrying
-    if task_state.status not in (TaskStatus.PENDING, TaskStatus.RETRYING):
-        return False
-    
-    # Check concurrency slots
-    if running_count >= max_concurrency:
-        return False
-    
-    # Check dependencies completed
-    for dep_id in task_def.depends_on:
+def _needs_approval(task: TaskDefinition) -> bool:
+    return (
+        task.approval == ApprovalRequirement.REQUIRED
+        and task.approval_point == ApprovalPoint.BEFORE_EXECUTION
+    )
+
+
+def _dependencies_completed(task: TaskDefinition, run_state: RunState) -> bool:
+    for dep_id in task.depends_on:
         dep_state = run_state.tasks.get(dep_id)
         if not dep_state or dep_state.status != TaskStatus.COMPLETED:
             return False
-    
-    # Check approval for before_execution
-    if task_def.approval.value == "required" and task_def.approval_point.value == "before_execution":
-        # Would need approval check here (Stage 5)
-        pass
-    
     return True
 
 
-def _should_block(task_def, run_state: RunState, workflow: WorkflowDefinition) -> str | None:
-    """Check if task should be blocked. Returns block reason or None."""
-    task_state = run_state.tasks.get(task_def.id)
-    if not task_state:
-        return None
-    
-    # Check dependency failures
-    for dep_id in task_def.depends_on:
+def _block_reason(
+    task: TaskDefinition,
+    run_state: RunState,
+    blocked_ids: set[str],
+) -> str | None:
+    """Return a block reason if the task cannot run because of a dependency."""
+    for dep_id in task.depends_on:
+        if dep_id in blocked_ids:
+            return f"dependency '{dep_id}' blocked"
         dep_state = run_state.tasks.get(dep_id)
         if dep_state and dep_state.status in (TaskStatus.BLOCKED, TaskStatus.FAILED):
             return f"dependency '{dep_id}' {dep_state.status.value}"
-    
     return None

@@ -62,6 +62,20 @@ def parse_workflow(content: bytes) -> WorkflowDefinition:
     
     if not isinstance(data, dict):
         raise WorkflowParseError(f"Workflow root must be a mapping, got {type(data).__name__}")
+
+    _check_keys(
+        data,
+        {
+            "version",
+            "workflow",
+            "execution",
+            "executors",
+            "executor_mapping",
+            "tasks",
+            "context",
+        },
+        "workflow file",
+    )
     
     # Check version
     version = data.get("version")
@@ -74,6 +88,8 @@ def parse_workflow(content: bytes) -> WorkflowDefinition:
     workflow_data = data.get("workflow")
     if not isinstance(workflow_data, dict):
         raise WorkflowParseError("Missing or invalid 'workflow' section")
+
+    _check_keys(workflow_data, {"id", "description"}, "workflow")
     
     workflow = WorkflowMetadata(
         id=_require_str(workflow_data, "workflow.id"),
@@ -84,6 +100,12 @@ def parse_workflow(content: bytes) -> WorkflowDefinition:
     exec_data = data.get("execution")
     if not isinstance(exec_data, dict):
         raise WorkflowParseError("Missing or invalid 'execution' section")
+
+    _check_keys(
+        exec_data,
+        {"max_concurrency", "max_retries", "max_run_duration_minutes"},
+        "execution",
+    )
     
     execution = ExecutionLimits(
         max_concurrency=_require_int(exec_data, "execution.max_concurrency", min_val=1),
@@ -100,6 +122,8 @@ def parse_workflow(content: bytes) -> WorkflowDefinition:
     for name, exec_config in executors_data.items():
         if not isinstance(exec_config, dict):
             raise WorkflowParseError(f"executors.{name} must be a mapping")
+
+        _check_keys(exec_config, {"adapter", "config"}, f"executors.{name}")
         
         adapter = exec_config.get("adapter")
         if not isinstance(adapter, str) or not adapter:
@@ -140,6 +164,8 @@ def parse_workflow(content: bytes) -> WorkflowDefinition:
     if context_data is not None:
         if not isinstance(context_data, dict):
             raise WorkflowParseError("'context' must be a mapping")
+
+        _check_keys(context_data, {"instructions", "references"}, "context")
         
         instructions = context_data.get("instructions", [])
         references = context_data.get("references", [])
@@ -170,7 +196,27 @@ def parse_workflow(content: bytes) -> WorkflowDefinition:
 def _parse_task(data: dict, idx: int) -> TaskDefinition:
     """Parse a single task definition."""
     prefix = f"tasks[{idx}]"
-    
+
+    _check_keys(
+        data,
+        {
+            "id",
+            "type",
+            "executor",
+            "depends_on",
+            "inputs",
+            "outputs",
+            "verification",
+            "approval",
+            "approval_point",
+            "max_retries",
+            "timeout_minutes",
+            "side_effects",
+            "idempotency_key",
+        },
+        prefix,
+    )
+
     task_id = _require_str(data, f"{prefix}.id")
     task_type = _require_str(data, f"{prefix}.type")
     
@@ -190,7 +236,9 @@ def _parse_task(data: dict, idx: int) -> TaskDefinition:
     for i_idx, inp in enumerate(inputs_data):
         if not isinstance(inp, dict):
             raise WorkflowParseError(f"{prefix}.inputs[{i_idx}] must be a mapping")
-        
+
+        _check_keys(inp, {"name", "from", "artifact"}, f"{prefix}.inputs[{i_idx}]")
+
         inputs.append(TaskInput(
             name=_require_str(inp, f"{prefix}.inputs[{i_idx}].name"),
             from_task=_require_str(inp, f"{prefix}.inputs[{i_idx}].from"),
@@ -206,11 +254,19 @@ def _parse_task(data: dict, idx: int) -> TaskDefinition:
     for o_idx, out in enumerate(outputs_data):
         if not isinstance(out, dict):
             raise WorkflowParseError(f"{prefix}.outputs[{o_idx}] must be a mapping")
-        
+
+        _check_keys(out, {"name", "path", "min_bytes"}, f"{prefix}.outputs[{o_idx}]")
+
+        min_bytes = _optional_int(
+            out, f"{prefix}.outputs[{o_idx}].min_bytes", min_val=0
+        )
+        if min_bytes is None:
+            min_bytes = 1
+
         outputs.append(TaskOutput(
             name=_require_str(out, f"{prefix}.outputs[{o_idx}].name"),
             path=_require_str(out, f"{prefix}.outputs[{o_idx}].path"),
-            min_bytes=_optional_int(out, f"{prefix}.outputs[{o_idx}].min_bytes", min_val=0) or 1,
+            min_bytes=min_bytes,
         ))
     
     # Parse verification
@@ -222,7 +278,21 @@ def _parse_task(data: dict, idx: int) -> TaskDefinition:
     for v_idx, crit in enumerate(verification_data):
         if not isinstance(crit, dict):
             raise WorkflowParseError(f"{prefix}.verification[{v_idx}] must be a mapping")
-        
+
+        _check_keys(
+            crit,
+            {
+                "id",
+                "method",
+                "command",
+                "timeout_seconds",
+                "executor",
+                "acceptance_criteria",
+                "prompt",
+            },
+            f"{prefix}.verification[{v_idx}]",
+        )
+
         verification.append(_parse_verification_criterion(crit, f"{prefix}.verification[{v_idx}]"))
     
     # Parse approval
@@ -281,16 +351,29 @@ def _parse_verification_criterion(data: dict, prefix: str) -> VerificationCriter
         raise WorkflowParseError(
             f"{prefix}.method must be 'command', 'agent', or 'human', got {method_str!r}"
         )
+
+    timeout_seconds = _optional_int(data, f"{prefix}.timeout_seconds", min_val=1)
+    if timeout_seconds is None:
+        timeout_seconds = 300
     
     return VerificationCriterion(
         id=crit_id,
         method=method,
         command=data.get("command"),
-        timeout_seconds=_optional_int(data, f"{prefix}.timeout_seconds", min_val=1) or 300,
+        timeout_seconds=timeout_seconds,
         executor=data.get("executor"),
         acceptance_criteria=data.get("acceptance_criteria"),
         prompt=data.get("prompt"),
     )
+
+
+def _check_keys(data: dict, allowed: set[str], path: str) -> None:
+    """Reject unknown keys instead of silently ignoring typos."""
+    unknown = set(data.keys()) - allowed
+    if unknown:
+        raise WorkflowParseError(
+            f"{path}: unknown keys {sorted(unknown)} (allowed: {sorted(allowed)})"
+        )
 
 
 def _require_str(data: dict, path: str) -> str:

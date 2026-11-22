@@ -4,12 +4,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from graph_engine import __version__
+from graph_engine.errors import ValidationError
 from graph_engine.models.enums import RunStatus, TaskStatus
 from graph_engine.models.run import RunState, TaskState
 from graph_engine.models.workflow import WorkflowDefinition
 from graph_engine.persistence.atomic import atomic_read_json, atomic_write_json
 from graph_engine.persistence.layout import RunLayout, generate_run_id
 from graph_engine.persistence.snapshot import snapshot_executor_config, snapshot_workflow
+from graph_engine.validation import validate_workflow
 
 
 def create_run(
@@ -29,16 +31,29 @@ def create_run(
         
     Returns:
         (RunState, RunLayout) tuple
+
+    Raises:
+        ValidationError: if the workflow is invalid
     """
+    report = validate_workflow(workflow)
+    if not report.is_valid:
+        raise ValidationError(
+            "Workflow validation failed: " + "; ".join(report.errors)
+        )
+
     if run_id is None:
         run_id = generate_run_id(workflow.workflow.id)
     
     layout = RunLayout(runs_dir, run_id)
-    layout.create_structure()
-    
-    # Snapshot workflow and config
-    workflow_hash = snapshot_workflow(workflow_bytes, layout.workflow_snapshot)
+
+    if layout.run_root.exists():
+        raise ValidationError(f"Run already exists: {run_id}")
+
+    # Snapshot config first: it rejects literal secrets before anything is
+    # written, so a rejected workflow leaves no partial run directory.
     config_hash = snapshot_executor_config(workflow, layout.executor_config_snapshot)
+    workflow_hash = snapshot_workflow(workflow_bytes, layout.workflow_snapshot)
+    layout.create_structure()
     
     # Initialize task states
     tasks = {}

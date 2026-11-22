@@ -1,15 +1,11 @@
 """Schema and structural validation."""
 
-import re
 from pathlib import Path
 
 from graph_engine.errors import ValidationError
+from graph_engine.ids import is_safe_id
 from graph_engine.models.enums import ApprovalRequirement, VerificationMethod
 from graph_engine.models.workflow import TaskDefinition, WorkflowDefinition
-
-
-# Filesystem-safe pattern for IDs
-_SAFE_ID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]+$')
 
 
 def validate_schema(workflow: WorkflowDefinition) -> list[str]:
@@ -21,7 +17,7 @@ def validate_schema(workflow: WorkflowDefinition) -> list[str]:
     errors = []
     
     # Workflow ID
-    if not _SAFE_ID_PATTERN.match(workflow.workflow.id):
+    if not is_safe_id(workflow.workflow.id):
         errors.append(
             f"workflow.id '{workflow.workflow.id}' must be filesystem-safe "
             "(alphanumeric, underscore, dash only)"
@@ -29,12 +25,20 @@ def validate_schema(workflow: WorkflowDefinition) -> list[str]:
     
     # Task IDs and artifact names
     for task in workflow.tasks:
-        if not _SAFE_ID_PATTERN.match(task.id):
+        if not is_safe_id(task.id):
             errors.append(
                 f"task '{task.id}' must be filesystem-safe "
                 "(alphanumeric, underscore, dash only)"
             )
         
+        # Input artifact names become directory names in staging.
+        for inp in task.inputs:
+            if not is_safe_id(inp.name):
+                errors.append(
+                    f"task '{task.id}' input '{inp.name}' must be filesystem-safe "
+                    "(alphanumeric, underscore, dash only)"
+                )
+
         # Output paths must start with artifacts/ and be relative
         for output in task.outputs:
             path = Path(output.path)
@@ -49,6 +53,11 @@ def validate_schema(workflow: WorkflowDefinition) -> list[str]:
                 errors.append(
                     f"task '{task.id}' output '{output.name}': "
                     f"path must start with 'artifacts/', got '{output.path}'"
+                )
+            elif output.path == "artifacts/":
+                errors.append(
+                    f"task '{task.id}' output '{output.name}': "
+                    "path must name a file under 'artifacts/', got 'artifacts/'"
                 )
             
             if ".." in path.parts:
@@ -96,16 +105,4 @@ def validate_schema(workflow: WorkflowDefinition) -> list[str]:
                 "requires 'idempotency_key'"
             )
     
-    return errors
-
-
-def validate_no_unknown_keys(data: dict, allowed: set[str], path: str) -> list[str]:
-    """Check for unknown keys in a mapping (used during parsing if needed)."""
-    errors = []
-    unknown = set(data.keys()) - allowed
-    if unknown:
-        errors.append(
-            f"{path}: unknown keys {sorted(unknown)} "
-            f"(allowed: {sorted(allowed)})"
-        )
     return errors
