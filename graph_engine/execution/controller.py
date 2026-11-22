@@ -166,7 +166,7 @@ class RunController:
         try:
             result = executor.execute(context)
         except Exception as exc:  # noqa: BLE001 - adapter errors become failures
-            self.state.active_execution_seconds += int(time.monotonic() - started)
+            self._add_execution_time(started)
             self._retry_or_block(
                 task,
                 task_state,
@@ -177,7 +177,7 @@ class RunController:
             )
             return
 
-        self.state.active_execution_seconds += int(time.monotonic() - started)
+        self._add_execution_time(started)
 
         result_errors = validate_result(result)
         if result_errors:
@@ -471,6 +471,9 @@ class RunController:
         self._persist()
         self._emit("run_failed", reason=reason)
         return self.state
+
+    def _add_execution_time(self, started: float) -> None:
+        self.state.active_execution_seconds += time.monotonic() - started
 
     def _timeout_exceeded(self) -> bool:
         limit = self.state.max_run_duration_minutes

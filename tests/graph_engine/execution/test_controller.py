@@ -1,5 +1,7 @@
 """End-to-end tests for the run controller."""
 
+import pytest
+
 from graph_engine.execution.controller import RunController
 from graph_engine.execution.result import ExecutionResult
 from graph_engine.models.enums import ExecutionStatus, RunStatus, TaskStatus
@@ -319,3 +321,65 @@ def test_verification_removing_output_lists_only_that_output(tmp_path):
 
     assert _attempt(layout, "task-a", 1)["retry_feedback"]["missing_artifacts"] == ["out"]
     assert executor.calls[1].retry_feedback.missing_artifacts == ["out"]
+
+
+class _FakeTime:
+    def __init__(self, values):
+        self.values = iter(values)
+
+    def monotonic(self):
+        return next(self.values)
+
+
+def test_subsecond_tasks_accumulate_active_execution_seconds(tmp_path, monkeypatch):
+    from graph_engine.execution import controller as controller_module
+
+    workflow, state, layout = make_run(tmp_path)
+    monkeypatch.setattr(
+        controller_module, "time", _FakeTime([0.0, 0.4, 0.4, 0.8])
+    )
+    executor = ScriptedExecutor([success(), success()])
+
+    result = RunController(
+        workflow, layout, state, DictRegistry({"worker": executor})
+    ).run()
+
+    assert result.status == RunStatus.COMPLETED
+    assert result.active_execution_seconds == pytest.approx(0.8)
+
+    from graph_engine.persistence import load_run_state
+
+    loaded = load_run_state(layout)
+    assert isinstance(loaded.active_execution_seconds, float)
+    assert loaded.active_execution_seconds == pytest.approx(0.8)
+
+
+def test_crashed_executor_accumulates_elapsed_time(tmp_path, monkeypatch):
+    from graph_engine.execution import controller as controller_module
+
+    class Crashing(ScriptedExecutor):
+        def execute(self, context):
+            raise RuntimeError("boom")
+
+    workflow, state, layout = make_run(tmp_path)
+    monkeypatch.setattr(
+        controller_module, "time", _FakeTime([10.0, 10.25, 10.25, 10.5])
+    )
+    RunController(
+        workflow, layout, state, DictRegistry({"worker": Crashing([success()])})
+    ).run()
+
+    assert state.active_execution_seconds == pytest.approx(0.5)
+
+
+def test_run_state_loads_integer_active_execution_seconds(tmp_path):
+    from graph_engine.models.run import RunState
+
+    workflow, state, layout = make_run(tmp_path)
+    data = state.to_dict()
+    data["active_execution_seconds"] = 7
+
+    loaded = RunState.from_dict(data)
+
+    assert loaded.active_execution_seconds == 7.0
+    assert isinstance(loaded.active_execution_seconds, float)

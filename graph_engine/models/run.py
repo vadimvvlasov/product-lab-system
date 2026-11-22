@@ -53,7 +53,7 @@ class RunState:
     max_concurrency: int = 1
     max_retries: int = 0
     max_run_duration_minutes: Optional[int] = None
-    active_execution_seconds: int = 0
+    active_execution_seconds: float = 0.0
     
     # Task states
     tasks: dict[str, TaskState] = field(default_factory=dict)
@@ -156,7 +156,7 @@ class RunState:
             max_concurrency=data.get("max_concurrency", 1),
             max_retries=data.get("max_retries", 0),
             max_run_duration_minutes=data.get("max_run_duration_minutes"),
-            active_execution_seconds=data.get("active_execution_seconds", 0),
+            active_execution_seconds=float(data.get("active_execution_seconds", 0)),
             tasks=tasks,
             run_errors=[
                 ErrorRecord(
