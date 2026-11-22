@@ -239,15 +239,23 @@ class RunController:
             self._block(task, task_state, f"cannot build verification context: {exc}")
             return
 
-        results, passed = self.verifier.verify_all(
-            task.verification,
-            staging,
-            {
-                "task_id": task.id,
-                "input_artifacts": input_artifacts,
-                "required_outputs": {out.name: out.path for out in task.outputs},
-            },
-        )
+        # Verification is active work and counts toward max_run_duration_minutes
+        # (executor time and verifier time share one counter). Only verify_all is
+        # timed, so approval pauses are excluded; finally also covers a raising
+        # verifier. AgentVerifier executor time is covered by this one measurement.
+        started = time.monotonic()
+        try:
+            results, passed = self.verifier.verify_all(
+                task.verification,
+                staging,
+                {
+                    "task_id": task.id,
+                    "input_artifacts": input_artifacts,
+                    "required_outputs": {out.name: out.path for out in task.outputs},
+                },
+            )
+        finally:
+            self._add_execution_time(started)
 
         if not passed:
             self._save_attempt(
